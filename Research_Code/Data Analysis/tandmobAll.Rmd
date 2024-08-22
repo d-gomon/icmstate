@@ -1,0 +1,555 @@
+---
+title: "AIDS Cohort Data Analysis"
+author: "Gomon, Daniel"
+date: "14/06/2024"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Longitudinal prospective dental Study in Flanders
+
+The data set is described in 
+
+Vanobbergen, J., Martens, L., Lesaffre, E., and Declerck, D. (2000). The Signal-Tandmobiel project
+– a longitudinal intervention health promotion study in Flanders (Belgium): baseline and first year
+results. European Journal of Paediatric Dentistry, 2, 87–96
+
+For more information, see
+```{r}
+library(icensBKL)
+#?tandmobAll
+```
+
+
+## Aim of this file
+
+In this file, we would like to analyze the Signal Tandmobiel Study data by using a multi-state 
+model that can handle interval censored observations.
+
+We consider the following multi-state model:
+
+1. D
+2. P46
+3. C46
+4. P44+P46
+5. P44+C46
+6. C44+C46
+7. C44+P46
+
+with D meaning deciduous teeth, P meaning permanent teeth, C meaning permanent teeth with caries and 44 and 46 indicating the tooth number. Teeth 44 and 46 are spatially close to each other. BKL Example 4.2 
+
+The following 9 transitions are possible:
+
+1->2
+2->3
+2->4
+3->5
+4->5
+4->6
+4->7
+5->6
+7->6
+
+
+## Load the necessary software and data
+
+```{r}
+#library(devtools)
+# install_github("d-gomon/icmstate",
+#               ref = "19f64ab6768ad05256a17d12c555961c9789eb8c",
+#               auth_token = "WOULDNTYOULIKETOKNOW:)")
+library(icmstate)
+```
+
+```{r}
+library(mstate)
+data("tandmobAll")
+dat <- tandmobAll
+#remove covariates
+dat <- dat[, -c(2:7, 120:143)]
+```
+
+We are only interested in teeth 44 and 46:
+```{r}
+t44_idx <- which(grepl("44", colnames(dat), fixed = TRUE))
+t46_idx <- which(grepl("46", colnames(dat), fixed = TRUE))
+dat <- dat[, c(t44_idx, t46_idx)]
+```
+
+Remove person 813, as this is the only person that had tooth 44 appear before tooth 46.
+
+```{r}
+dat <- dat[-813, ]
+```
+
+
+We transform NA's to interpretable values for interval censoring. So if left-endpoint is NA, we set it to 0, if right endpoint is NA, we set it to Inf
+
+```{r}
+dat[which(is.na(dat[, 1])), 1] <- 0
+dat[which(is.na(dat[, 2])), 2] <- Inf
+dat[which(is.na(dat[, 3])), 3] <- 0
+dat[which(is.na(dat[, 4])), 4] <- Inf
+dat[which(is.na(dat[, 5])), 5] <- 0
+dat[which(is.na(dat[, 6])), 6] <- Inf
+dat[which(is.na(dat[, 7])), 7] <- 0
+dat[which(is.na(dat[, 8])), 8] <- Inf
+```
+
+Set up a transition matrix.
+
+```{r}
+#Old transition matrix, where we also considered the one person that has 44 before 46.
+#tmat <- transMat(list(c(2, 3), c(4, 5), c(5, 6), c(7), c(7, 8, 9), c(9), c(8), c(), c(8)), 
+#                 names = c("D", "P46", "P44", "C46", "P44+P46", "C44", "P44+C46", "C44+C46", "C44+P46"))
+
+tmat <- transMat(list(c(2), c(3, 4), c(5), c(5, 6, 7), c(6), c(), c(6)), 
+                 names = c("D", "P46", "C46", "P44+P46", "P44+C46", "C44+C46", "C44+P46"))
+```
+
+We transform the data into a long format:
+
+```{r}
+#Function to add row to data.frame corresponding to state and time
+add_row_gd <- function(gd, state, time, id){
+  #state entries correspond to P44, C44, P46, C46
+  #Get statenumber from corresponding state vector
+  if(all(state == c(0, 0, 0, 0))){
+    state_new <- 1
+  } else if(all(state == c(0, 0, 1, 0))){
+    state_new <- 2
+  } else if(all(state == c(0, 0, 1, 1))){
+    state_new <- 3
+  } else if(all(state == c(1, 0, 1, 0))){
+    state_new <- 4
+  } else if(all(state == c(1, 0, 1, 1))){
+    state_new <- 5
+  } else if(all(state == c(1, 1, 1, 1))){
+    state_new <- 6
+  } else if(all(state == c(1, 1, 1, 0))){
+    state_new <- 7
+  }
+
+  gd <- rbind(gd, c(id, state_new, time))
+  return(gd)
+}
+
+gd <- NULL
+for(i in 1:nrow(dat)){
+  #Keep track of P44, C44, P46, C46
+  #Clearly everyone starts out without any permanent teeth
+  subj_state <- c(0, 0, 0, 0)
+  #Keep track of current time for the state the subject is in.
+  subj_time <- 0
+  
+  gd <- add_row_gd(gd = gd, state = subj_state, time = 0, id = i)
+  
+  #Consider only a single subject
+  dati <- as.numeric(dat[i,])
+  #Which entries represent end-times?
+  endtimes_idx <- c(2, 4, 6, 8)
+  starttimes_idx <- c(1, 3, 5, 7)
+  #Determine the end times
+  endtimesi <- dati[endtimes_idx]
+  starttimesi <- dati[starttimes_idx]
+  
+  #Determine which tooth emerged first (P44, P46)
+  #For this look at the end-times
+  tooth_emerge_times <- endtimesi[c(1, 3)]
+  if(all(is.infinite(tooth_emerge_times))){
+    #Right-censored for both teeth
+    subj_time <- min(starttimesi[c(1, 3)])
+    gd <- add_row_gd(gd = gd, state = subj_state, time = subj_time, id = i)
+    next
+  } 
+  
+  #Otherwise, we go through the unique endtimes
+  order_endtimes <- order(endtimesi)
+  sorted_endtimes <- sort(endtimesi)
+  processed_endtimes <- NULL
+  for(j in 1:length(sorted_endtimes)){
+    current_endtime <- sorted_endtimes[j]
+    if(current_endtime %in% processed_endtimes){
+      next
+    }
+    if(is.infinite(current_endtime)){ #If we arrived at a right-censored endtime, that means nothing was observed anymore since last obs time
+      which_happened <- order_endtimes[which(sorted_endtimes == current_endtime)] #Determine what happened at the same time
+      gd <- add_row_gd(gd = gd, state = subj_state, time = min(starttimesi[which_happened]), id = i)
+      break
+    }
+    
+    which_happened <- order_endtimes[which(sorted_endtimes == current_endtime)] #Determine what happened at the same time
+    gd <- add_row_gd(gd = gd, state = subj_state, time = min(starttimesi[which_happened]), id = i)
+    subj_state[which_happened] <- 1
+    gd <- add_row_gd(gd = gd, state = subj_state, time = current_endtime, id = i)
+    processed_endtimes <- c(processed_endtimes, current_endtime)
+  }
+}
+colnames(gd) <- c("id", "state", "time")
+gd <- as.data.frame(gd)
+```
+
+How often is a certain state reached?
+
+```{r}
+table(gd$state)
+```
+
+Which transitions are made?
+
+```{r}
+library(msm)
+statetable <- msm::statetable.msm(state, id, gd)
+colnames(statetable) <- c("D", "P46", "C46", "P44+P46", "P44+C46", "C44+C46", "C44+P46")
+rownames(statetable) <- c("D", "P46", "C46", "P44+P46", "P44+C46", "C44+P46")
+statetable
+```
+
+
+We will be comparing the transition P46 -> C46 with P44+P46 -> P44+C46. Note that:
+- 585 transitions P46 -> C46
+- 170 transitions P44+P46 -> P44+C46
+
+
+We are also interested in finding out at what time the transitions P44+P46 -> P44+C46 happen.
+
+```{r}
+gdtemp <- NULL
+for(i in unique(gd$id)){
+  gdi <- subset(gd, id == i)
+  idxi <- (c(0, diff(gdi$state)) == 1) & (gdi$state == 5)
+  if(any(idxi)){
+    idxi[which(idxi)-1] <- TRUE  
+  }
+  gdtemp <- rbind(gdtemp, gdi[idxi, ])
+}
+
+visdat <- data.frame(left = subset(gdtemp, state == 4)$time,
+                     right = subset(gdtemp, state == 5)$time,
+                     event = rep(3, 170))
+
+#Make a plot to check the intervals
+asd <- survfit(Surv(left, right, event, type = "interval2") ~ 1, data = visdat)
+plot(asd)
+```
+
+We can see that the smallest right-endpoint is at time 8.8. The smallest left-startpoint is at time 7.8. This means that subjects enter P44+P46 very late compared to P46, and the first observed transition to P44+C46 is not until time 8.8
+
+
+
+
+
+
+# Some data summaries
+
+
+
+# EM algorithms
+
+Run EM algorithms
+
+
+```{r eval = FALSE}
+#Computations done on ALICE
+#toothMSMmult <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE)
+#toothMSMpois <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE, method = "poisson")
+#Can't get MSM to work. Somehow crudeinits does not assign any mass to 1->2 transition.
+#toothMSM <- msm::msm(state ~ time, subject = id, data = gd2, qmatrix = qmatrix, gen.inits = TRUE)
+#save(gd, tmat, toothMSMmult, file = "toothMSMMult.Rdata")
+#save(gd, tmat, toothMSMpois, file = "toothMSMPois.Rdata")
+```
+
+
+```{r}
+load("toothMSMMult.Rdata")
+load("toothMSMPois.Rdata")
+```
+
+
+# Time Homogeneous Model
+
+```{r}
+#msm::msm parameters
+qmatrix <- tmat
+qmatrix[is.na(qmatrix)] <- 0
+```
+
+Determine where to put the cut-points:
+```{r}
+ptf <- probtrans(toothMSMmult$A, predt = 0, direction = "forward", variance = FALSE)
+#We want to find the first non zero and maximum of P_{D->P46}(0, t) over t, so P_{12}(0, t)
+#[, 3] because first colum is time
+ptfs <- ptf[[1]][, 3]
+max_times <- ptf[[1]][which.max(ptfs), 1]
+first_nonzero <- ptf[[1]][which.max(ptfs != 0), 1]
+```
+
+Run MSM algorithm
+
+```{r messages = FALSE}
+library(msm)
+gd_msm <- remove_redundant_observations(gd)
+```
+
+We need to change the crudeinits of the msm function a bit, because it does not provide any initial mass to the 8-th transition:
+
+
+```{r eval = FALSE}
+qmat_try <- crudeinits.msm(state ~ time, id, qmatrix, data = gd_msm)
+#Need to set this estimate to non-zero, as crudeinits sets it to zero due to low observation count on that transition
+qmat_try[5, 6] <- 0.001
+toothMSMHom <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qmat_try, gen.inits = FALSE, pci = c(6, 8, 10), control=list(fnscale=12000, maxit = 3000))
+
+toothMSMHom2 <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qmat_try, gen.inits = FALSE, pci = c(8, 10), control=list(fnscale=12000, maxit = 3000))
+
+#Try other optimization methods.
+
+#toothMSMHom_nlm <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qmat_try, gen.inits = FALSE, pci = c(first_nonzero, max_times), fscale = 12000, print.level = 1, stepmax = 1000, opt.method = "nlm")
+
+#library(minqa)
+#toothMSMHom_bobyqa <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qmat_try, gen.inits = FALSE, pci = c(first_nonzero, max_times), control=list(rhobeg = 100000, rhoend = 5000, maxfun = 1000, iprint = 2), opt.method = "bobyqa")
+
+save(toothMSMHom, file = "toothMSMHom.Rdata")
+```
+
+
+```{r}
+load("toothMSMHom.Rdata")
+```
+
+
+
+# Try with simpler data to fit Homogeneous model
+
+```{r eval = FALSE}
+gd_msm_simple <- subset(gd_msm, state != 6 & state != 7)
+gd_msm_simple <- subset(gd_msm_simple, id!=3569)
+qmat_try_simple <- crudeinits.msm(state ~ time, id, qmatrix[1:5, 1:5], data = gd_msm_simple)
+qmat_try_simple[5, 5] <- -0.1
+
+toothMSMHom_simple <- msm::msm(state ~ time, data = gd_msm_simple, subject = id, qmatrix = qmat_try_simple, gen.inits = FALSE, pci = c(first_nonzero, max_times), control=list(fnscale=12000, maxit = 1000))
+```
+
+
+# Plotting functions from mstate package (descriptives of data set)
+
+Plot the cumulative hazards together
+
+```{r}
+plot(toothMSMmult$A, type = "single")
+```
+
+Plot the transition probabilities
+
+```{r}
+trans_probs <- probtrans(toothMSMmult$A, predt = 0, direction = "forward", variance = FALSE)
+#Remove the infinite values
+for(i in 1:nrow(qmatrix)){
+  trans_probs[[i]] <- trans_probs[[i]][-nrow(trans_probs[[i]]), ]
+}
+library(RColorBrewer)
+library(latex2exp)
+library(ggplot2)
+colors_dark2 <- brewer.pal(8, "Dark2")
+cols_use <- colors_dark2[c(5, 3, 4, 2, 7, 6, 1)]
+#If we want to use a ramp palette instead:
+#cols_use <- colorRampPalette(colors = colors_dark2[1:2])(7)
+#cols_use <- cols_use[c(2:7, 1)]
+
+ord_use <- c(2, 4, 3, 5, 7, 6, 1)
+a <- plot(trans_probs, type = "filled", ord = ord_use, use.ggplot = TRUE, cols = cols_use, lwd = 1, xlim = c(6, 12.3))
+a <- a + labs(title = TeX("Transition Probabilities: $P_{Dx}(0, t)$")) + theme(legend.title=element_blank()) +
+  theme(legend.key.size = unit(0.4, 'cm'), #change legend key size
+        legend.key.height = unit(0.4, 'cm'), #change legend key height
+        legend.key.width = unit(0.4, 'cm'), #change legend key width
+        legend.text = element_text(size=7)) #change legend text font size
+
+
+#ggsave(file = "TransProbTandMob.eps", plot = a, width = 5.5, height = 3, units = "in", scale = 1.7)
+```
+
+# Plotting the cumulative hazards of different transitions against each other
+
+We want to create a plot which compares the cumulative hazards to determine whether caries on 46 accelerated occurence of 44:
+- 2->4 (Transition 3) and 3->5 (Transition 4)
+We also want to compare the hazards of occurence of Caries on P46:
+- 2->3 (Transition 2) and 3->5 (Transition 4)
+
+
+
+
+```{r}
+tmat2 <- to.trans2(tmat)
+msfit_obj <- toothMSMmult$A
+trans_names <- paste0(tmat2$fromname, "->", tmat2$toname)
+names(trans_names) <- 1:nrow(tmat2)
+
+msfit1 <- msfit_obj
+msfit2 <- msfit_obj
+
+msfit1$Haz <- subset(msfit1$Haz, (trans == 3 | trans == 4) & is.finite(time))
+msfit2$Haz <- subset(msfit2$Haz, (trans == 2 | trans == 5) & is.finite(time))
+msfit1$Haz <- rbind(msfit1$Haz, data.frame(time = c(0, 0), Haz = c(0, 0), trans = c(3, 4)))
+msfit2$Haz <- rbind(msfit2$Haz, data.frame(time = c(0, 0), Haz = c(0, 0), trans = c(2, 5)))
+```
+
+
+We also want to add the estimates of msm to the plots. For this we add a new column to the data set, where we indicate whether it is the EM estimate or the Homogeneous estimate. We need to create a function which outputs the appropriate Haz, using our break points:
+
+```{r}
+#toothMSMHom$pci tells you where the breakpoints are
+#qmatrices can be extracted using qmatrix.msm(toothMSMHom, covariates = list("[6.1,7.7)")) or "[-Inf,6.1)", "[7.7,Inf)"
+#We can extract the levels as follows
+cov_levels <- vector(mode = "numeric", length = length(toothMSMHom$pci) + 1)
+for(i in 1:(length(toothMSMHom$pci)+1)){
+  if(i == 1){
+    cov_levels[i] <- paste0("[-Inf,", toothMSMHom$pci[i], ")")  
+  } else if(i == length(toothMSMHom$pci) +1){
+    cov_levels[i] <- paste0("[", toothMSMHom$pci[i-1], ",Inf)")
+  } else{
+    cov_levels[i] <- paste0("[", toothMSMHom$pci[i-1], ",", toothMSMHom$pci[i], ")")
+  }
+}
+
+#Extract cumulative hazard from msm fit at times for specified transition
+Hazfrommsm <- function(times, transition, tmat2){
+  #times should be a vector of break-times + maximum considered time
+  #Extract the estimated intensities over the considered periods
+  intensities <- vector(mode = "numeric", length = length(toothMSMHom$Qmatrices)-1)
+  from <- tmat2[which(tmat2$transno == transition), "from"]
+  to <- tmat2[which(tmat2$transno == transition), "to"]
+  for(i in 1:length(intensities)){
+    intensities[i] <- qmatrix.msm(toothMSMHom, covariates = list(cov_levels[i]))$estimates[from, to]
+  }
+  
+  #Determine the cumulative intensities taking into account the breakpoints
+  times <- c(0, times)
+  haz_vals <- rep(0, length(intensities) + 1)
+  
+  for(i in 1:length(intensities)){
+    haz_vals[i+1] <- haz_vals[i]+ (times[i+1]-times[i])*intensities[i]
+  }
+  return(data.frame(time = times, Haz = haz_vals, trans = transition))
+}
+
+```
+
+
+
+# Caries accelerated?
+
+
+
+```{r}
+carieshom <- rbind(Hazfrommsm(times = c(toothMSMHom$pci, max(msfit1$Haz$time)), 3, tmat2),
+                   Hazfrommsm(times = c(toothMSMHom$pci, max(msfit1$Haz$time)), 4, tmat2))
+carieshom <- cbind(carieshom, rep("Homogeneous", nrow(carieshom)))
+cariesMult <- cbind(msfit1$Haz, rep("Multinomial", nrow(msfit1$Haz)))
+colnames(carieshom) <- colnames(cariesMult) <- c("time", "Haz", "trans", "Method")
+accelcariesdat <- rbind(cariesMult, carieshom)
+```
+
+
+# Occurence of Caries on P46?
+
+```{r}
+carieshom46 <- rbind(Hazfrommsm(times = c(toothMSMHom$pci, max(msfit2$Haz$time)), 2, tmat2),
+                   Hazfrommsm(times = c(toothMSMHom$pci, max(msfit2$Haz$time)), 5, tmat2))
+carieshom46 <- cbind(carieshom46, rep("Homogeneous", nrow(carieshom46)))
+cariesMult46 <- cbind(msfit2$Haz, rep("Multinomial", nrow(msfit2$Haz)))
+colnames(carieshom46) <- colnames(cariesMult46) <- c("time", "Haz", "trans", "Method")
+accelcariesdat46 <- rbind(cariesMult46, carieshom46)
+```
+
+
+
+```{r}
+fit1_plot_new <- ggplot() +  
+      geom_step(data = subset(accelcariesdat, Method == "Multinomial"), lwd = 1.3, aes(x = time, y = Haz, colour = as.factor(trans), group = interaction(as.factor(Method), as.factor(trans)), linetype = as.factor(Method))) + 
+      geom_line(data = subset(accelcariesdat, Method == "Homogeneous"), lwd = 1.3, aes(x = time, y = Haz, colour = as.factor(trans), group = interaction(as.factor(Method), as.factor(trans)), linetype = as.factor(Method))) +
+      xlab("Time") + 
+      ylab("Cumulative Hazard") +
+      coord_cartesian(ylim=c(0, 4), xlim = c(0, 12)) +
+      labs(colour='Transition', linetype = "Method") +
+      ggtitle("Caries on P46 accelerates P44?") +
+      scale_color_brewer(palette="Dark2", labels = trans_names) + theme( legend.box = "vertical") +
+  guides(colour = guide_legend(title.position = "top"), linetype = guide_legend(title.position = "top")) 
+
+
+
+fit2_plot_new <- ggplot() +  
+      geom_step(data = subset(accelcariesdat46, Method == "Multinomial"), lwd = 1.3, aes(x = time, y = Haz, colour = as.factor(trans), group = interaction(as.factor(Method), as.factor(trans)), linetype = as.factor(Method))) + 
+      geom_line(data = subset(accelcariesdat46, Method == "Homogeneous"), lwd = 1.3, aes(x = time, y = Haz, colour = as.factor(trans), group = interaction(as.factor(Method), as.factor(trans)), linetype = as.factor(Method))) +
+      xlab("Time") + 
+      ylab("Cumulative Hazard") +
+      coord_cartesian(ylim=c(0, 0.75), xlim = c(0, 12)) +
+      labs(colour='Transition', linetype = "Method") +
+      ggtitle("Occurrence of C46") +
+      scale_color_brewer(palette="Dark2", labels = trans_names) + theme( legend.box = "vertical") + guides(colour = guide_legend(title.position = "top"), linetype = guide_legend(title.position = "top")) 
+
+
+
+
+library(ggpubr)
+
+#qwe <- ggarrange(a, fit1_plot, fit2_plot, ncol = 3, labels = "AUTO", legend = "bottom")
+#ggsave(file = "CumHazTandMob.eps", plot = qwe, width = 5.5, height = 3, units = "in", scale = 1.7)
+
+qwe <- ggarrange(a, fit1_plot_new, fit2_plot_new, ncol = 3, labels = "AUTO", legend = "bottom")
+ggsave(file = "CumHazTandMob.eps", plot = qwe, width = 5.5, height = 3, units = "in", scale = 1.7)
+
+```
+
+
+
+
+# Plotting functions from the icmstate package
+
+
+Compare the fit of Mult and Poisson EM algorithm
+
+```{r}
+plot_probtrans(list(toothMSMmult, toothMSMpois), interpolate = FALSE, c.names = c("Multinomial", "Poisson"), from = 1)
+```
+
+There is barely any difference between the estimates.
+
+
+We would like to check whether Caries on tooth 46 accelerates the occurence of tooth 44
+
+```{r}
+plot_probtrans(toothMSMmult, interpolate = FALSE, transitions = c(2, 5))
+plot_probtrans(toothMSMmult, interpolate = FALSE, from = 2)
+```
+
+```{r fig.keep='all'}
+plot_probtrans(toothMSMmult, interpolate = FALSE)
+plot_probtrans(toothMSMmult, interpolate = FALSE, from = 2)
+plot_probtrans(toothMSMmult, interpolate = FALSE, from = 3)
+```
+
+In the first picture, we are interested in comparing the 3rd and 4th row. It looks like the probability to reach P44 is faster if you first get caries on P46. Corresponds to icensBKL book!
+
+
+
+```{r fig.keep='all'}
+plot_probtrans(toothMSMpois, interpolate = FALSE)
+plot_probtrans(toothMSMpois, interpolate = FALSE, from = 2)
+plot_probtrans(toothMSMpois, interpolate = FALSE, from = 3)
+
+plot_probtrans(toothMSMpois, interpolate = FALSE, from = 3, facet = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+

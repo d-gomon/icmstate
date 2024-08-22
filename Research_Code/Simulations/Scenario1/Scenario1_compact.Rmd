@@ -1,0 +1,506 @@
+---
+title: "ScenarioX_compact"
+author: "Daniel Gomon"
+date: '2024-06-26'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Scenario information - Adjust here to get appropriate output.
+
+```{r}
+scenario <- 1 #Choose from 1:4
+n <- c(100, 300, 500) #Remove one if no files
+n_obs <- c(6) #At most c(3,6)
+N <- 1000
+methods <- c("binomial", "poisson", "msm")
+
+eval_times <- seq(0, 15, 0.1)
+w_shapes <- c(0.5, 0.5, 2)
+w_scales <- c(5, 10, 10/gamma(1.5))
+```
+
+
+
+```{r echo = FALSE}
+#Create file names to load:
+load_names <- expand.grid(scenario, n, n_obs, N, methods)
+colnames(load_names) <- c("scenario", "n", "n_obs", "N", "method")
+load_names[, 5] <- as.character(load_names[, 5])
+names_load <- c()
+var_names <- c()
+for(i in 1:nrow(load_names)){
+  x <- load_names[i,]
+  names_load <- c(names_load, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5], ".Rdata"))
+  var_names <- c(var_names, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5]))
+}
+```
+
+
+# Loading the data
+
+
+```{r echo = FALSE}
+for(i in 1:length(names_load)){
+  load(names_load[i])
+}
+```
+
+
+```{r}
+if(inherits(get(var_names[1])[[1]], "npmsm")){
+  n_states <- nrow(get(var_names[1])[[1]]$tmat) 
+} else if(inherits(get(var_names[1])[[1]], "msm")){
+  n_states <- get(var_names[1])[[1]]$qmodel$nstates
+}
+
+if(scenario == 3){
+  shapes <- c(0.5, 0.5, 2)
+  scales <- c(5, 10, 10/gamma(1.5))  
+} else{
+  shapes <- c(1, 1, 1)
+  scales <- c(10, 20, 10)
+}
+from <- 1 #Which state do we consider transitions from?
+```
+
+
+
+
+
+
+# Loading the necessary packages
+
+```{r echo = FALSE}
+library(icmstate)
+library(mstate)
+library(ggplot2)
+library(ggpubr)
+```
+
+
+
+
+# Cumulative Intensity Functions
+
+## Function to determine interpolation of cumulative hazard, taking into account the support sets.
+
+```{r echo = FALSE}
+interpol_support <- function(msfit, trans){
+  numeric_support <- support_npmsm(msfit)
+  M <- length(numeric_support)
+  if(trans > M){
+    stop("Please provide a transition number which is possible.")
+  }
+  transno <- trans
+  Haz <- rbind(c(0, 0, trans), subset(msfit$Haz, trans == transno))
+  supp <- numeric_support[[trans]]$support[, c(1,2), drop = FALSE]
+  
+  if(nrow(supp) == 0){
+    supp <- rbind(supp, c(min(Haz$time), max(Haz$time)))
+  }
+  
+  #Make interpolation grid
+  x <- matrix(t(supp), nrow = 1, byrow = FALSE)
+  y <-  Haz$Haz[findInterval(x, Haz$time)]
+  x <- c(0, x)
+  y <- c(0, y)
+  
+  return(approxfun(x = x, y = y, rule = 2))
+}
+
+interpol_support_msm <- function(msm, trans){
+  haz_rates <- exp(msm$estimates)
+  return(function(t) ifelse(is.na(haz_rates[trans]), 0, haz_rates[trans] * t))
+}
+```
+
+
+
+
+## Functions for time-specific extraction of statistics (RMSE, Bias, Variance)
+
+
+
+```{r echo = FALSE}
+#First we create a data-set where we have all the information we use to calculate summary statistics.
+create_summary_df <- function(dat, eval_times){
+  #Number of transitions
+  if(inherits(dat[[1]], "npmsm")){
+    M <- nrow(dat[[1]]$tmat2)  
+  } else{
+    M <- length(dat[[1]]$estimates)
+  }
+  
+  #Number of evluation times
+  n_times <- length(eval_times)
+  #Number of replicates
+  n_reps <- length(dat)
+  df <- matrix(NA, nrow = n_reps * n_times, ncol = M + 2)
+  for(i in 1:length(dat)){
+    if(inherits(dat[[i]]$A, "msfit")){
+      df[((i-1)*n_times +1):(i*n_times), 1:M] <- sapply(1:M, function(x) interpol_support(dat[[i]]$A, x)(eval_times))  
+    } else{
+      df[((i-1)*n_times +1):(i*n_times), 1:M] <- sapply(1:M, function(x) sapply(eval_times, function(t) interpol_support_msm(dat[[i]], x)(t)))   
+    }
+    df[((i-1)*n_times +1):(i*n_times), M+1] <- eval_times
+    df[((i-1)*n_times +1):(i*n_times), M+2] <- rep(i, n_times)
+  }
+  colnames(df) <- c(paste0("trans", 1:M), "time", "id")
+  return(df)
+}
+```
+
+
+
+Now we can calculate summary statistics (RMSE, Bias, Variance):
+
+```{r echo = FALSE}
+extract_summary_stat <- function(summary_df, oracle_df, eval_times){
+  M <- ncol(summary_df) - 2
+  out_df <- NULL
+  for(i in 1:length(eval_times)){
+    current_time <- eval_times[i]
+    relevant_df <- summary_df[summary_df[, "time"] == current_time, 1:M, drop = FALSE]
+    relevant_oracle <- oracle_df[oracle_df[, "time"] == current_time, 1:M, drop = FALSE]
+    #dat_trans contains difference between oracle hazard and estimated hazard for each transition (columns) for each repeat (rows)
+    dat_trans <- t(apply(relevant_df, 1, function(x) x - relevant_oracle))
+    #we therefore apply summary statistics to the columns to obtain them per transition
+    stats <- c(t(apply(dat_trans, 2, function(x) c(mean(x), var(x), sqrt(var(x) + mean(x)^2)))))
+    out_df <- rbind(out_df, data.frame(stats = stats, 
+                                       type = rep(c("Bias", "Var", "RMSE"), each = 3),
+                                       time = rep(current_time, M*3),
+                                       trans = rep(1:M, 3)))
+  }
+  return(out_df)
+}
+
+```
+
+We create an oracle:
+```{r}
+if(scenario != 3){ #Homogeneous oracle
+  oracle_df <- matrix(NA, nrow = length(eval_times), ncol = 5)
+  oracle_df[, 1] <- 0.1*eval_times
+  oracle_df[, 2] <- 0.05*eval_times
+  oracle_df[, 3] <- 0.1*eval_times
+  oracle_df[, 4] <- eval_times
+  oracle_df[, 5] <- rep(0, length(eval_times))
+  colnames(oracle_df) <- c(paste0("trans", 1:3), "time", "id")  
+} else{ #Weibull oracle
+  oracle_df <- matrix(NA, nrow = length(eval_times), ncol = 5)
+  oracle_df[, 1] <- -pweibull(eval_times, shape = w_shapes[1], scale = w_scales[1], lower = FALSE, log = TRUE)
+  oracle_df[, 2] <- -pweibull(eval_times, shape = w_shapes[2], scale = w_scales[2], lower = FALSE, log = TRUE)
+  oracle_df[, 3] <- -pweibull(eval_times, shape = w_shapes[3], scale = w_scales[3], lower = FALSE, log = TRUE)
+  oracle_df[, 4] <- eval_times
+  oracle_df[, 5] <- rep(0, length(eval_times))
+  colnames(oracle_df) <- c(paste0("trans", 1:3), "time", "id")  
+}
+
+
+```
+
+
+
+
+
+
+# Probability Transition Functions
+
+
+```{r echo = FALSE}
+#First we create a data-set where we have all the information we use to calculate summary statistics.
+create_summary_df_pt <- function(dat, eval_times, from = from){
+  #Number of transitions
+  if(inherits(dat[[1]], "npmsm")){
+    M <- nrow(dat[[1]]$tmat2)
+    n_states <- nrow(dat[[1]]$tmat)
+  } else{
+    M <- dat[[1]]$qmodel$npars
+    n_states <- dat[[1]]$qmodel$nstates
+  }
+  
+  #Number of evluation times
+  n_times <- length(eval_times)
+  #Number of replicates
+  n_reps <- length(dat)
+  df <- matrix(NA, nrow = n_reps * n_times, ncol = n_states + 2)
+  for(i in 1:length(dat)){
+    if(inherits(dat[[i]]$A, "msfit")){
+      df[((i-1)*n_times +1):(i*n_times), 1:(n_states+1)] <- suppressWarnings({
+      as.matrix(probtrans(interpol_msfit(dat[[i]]$A, times = eval_times), predt = min(eval_times), direction = "forward", variance = FALSE)[[from]])
+      })
+    } else{
+      df[((i-1)*n_times +1):(i*n_times), 1:(n_states+1)] <- suppressWarnings({
+        as.matrix(probtrans_msm(dat[[i]], times = eval_times)[[from]])
+      })
+    }
+    df[((i-1)*n_times +1):(i*n_times), n_states+2] <- rep(i, n_times)
+  }
+  colnames(df) <- c("time", paste0("tostate", 1:n_states), "id")
+  return(df)
+}
+```
+
+
+
+Now we can calculate summary statistics (RMSE, Bias, Variance):
+
+```{r echo = FALSE}
+extract_summary_stat_pt <- function(summary_df, oracle_df, eval_times){
+  M <- n_states <- ncol(summary_df) - 2
+  out_df <- NULL
+  for(i in 1:length(eval_times)){
+    current_time <- eval_times[i]
+    relevant_df <- summary_df[summary_df[, "time"] == current_time, 2:(n_states+1), drop = FALSE]
+    relevant_oracle <- as.matrix(oracle_df[oracle_df[, "time"] == current_time, 2:(n_states+1), drop = FALSE])
+    #dat_trans contains difference between oracle hazard and estimated hazard for each transition (columns) for each repeat (rows)
+    dat_trans <- t(apply(relevant_df, 1, function(x) x - relevant_oracle))
+    #we therefore apply summary statistics to the columns to obtain them per transition
+    stats <- c(t(apply(dat_trans, 2, function(x) c(mean(x), var(x), sqrt(var(x) + mean(x)^2)))))
+    out_df <- rbind(out_df, data.frame(stats = stats, 
+                                       type = rep(c("Bias", "Var", "RMSE"), each = n_states),
+                                       time = rep(current_time, M*3),
+                                       trans = rep(1:n_states, 3)))
+  }
+  return(out_df)
+}
+
+```
+
+
+#Extract Data
+
+## Intensities 
+
+
+```{r}
+for(i in 1:nrow(load_names)){
+  assign(paste0("summary_df", i), suppressWarnings(create_summary_df(get(var_names[i]), eval_times = eval_times)))
+}
+for(i in 1:nrow(load_names)){
+  assign(paste0("stat_df", i), extract_summary_stat(summary_df = get(paste0("summary_df", i)), oracle_df = oracle_df, eval_times = eval_times))
+}
+```
+
+
+
+## Transition Probabilities
+
+
+```{r}
+oracle_df_pt <- probtrans_weib(transMat = get(var_names[1])[[1]]$tmat, times = eval_times, shapes = shapes, scales = scales, type = "prodint")[[from]]
+
+for(i in 1:nrow(load_names)){
+  assign(paste0("summary_df_pt", i), suppressWarnings(create_summary_df_pt(get(var_names[i]), eval_times = eval_times)))
+}
+for(i in 1:nrow(load_names)){
+  assign(paste0("stat_df_pt", i), extract_summary_stat_pt(summary_df = get(paste0("summary_df_pt", i)), oracle_df = oracle_df_pt, eval_times = eval_times))
+}
+```
+
+
+
+
+
+
+# Plotting 
+
+
+## Cumulative Intensities
+
+Compare the statistics as n increases within methods.
+
+```{r fig.keep='all'}
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+
+for(i in 1:length(methods)){
+  stat_multiple <- NULL
+  for(j in 1:length(n)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df", (i-1)*length(n)+j)))
+  }
+  stat_multiple <- cbind(stat_multiple, c(rep(n, each = length(eval_times) * 9)))
+  colnames(stat_multiple)[5] <- "n"
+  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n), col = as.factor(n), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = paste0("Cumulative Intensities"), subtitle = paste0("Scenario ", scenario, ", ", method_names[i]), color = "Sample size", linetype = "Measure") + scale_color_brewer(palette="Dark2")
+  print(plot_all_stat)
+  assign(paste0("plot_all_statn", i), plot_all_stat)
+}
+
+all_stat_plotn <- ggarrange(plot_all_statn1, plot_all_statn2, plot_all_statn3, 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+
+ggsave(file = paste0("Scenario", scenario, "gg_compint.eps"), plot = all_stat_plotn, width = 5.5, height = 3, units = "in", scale = 1.7)
+```
+
+
+Compare between methods for fixed n.
+
+
+```{r}
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+
+for(i in 1:length(n)){
+  stat_multiple <- NULL
+  for(j in 1:length(methods)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df", i + length(n)*(j-1))))
+  }
+  stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * 9)))
+  colnames(stat_multiple)[5] <- "Method"
+  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Cumulative Intensities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names)
+  print(plot_all_stat)
+  assign(paste0("plot_all_stat", i), plot_all_stat)
+}
+
+all_stat_plot <- ggarrange(plot_all_stat1, plot_all_stat2, plot_all_stat3, 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+
+ggsave(file = paste0("Scenario", scenario, "gg_intensities.eps"), plot = all_stat_plot, width = 5.5, height = 3, units = "in", scale = 1.7)
+
+```
+
+
+
+
+
+
+## Transition Probabilities
+
+
+Compare the statistics as n increases within methods.
+
+```{r fig.keep='all'}
+
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+for(i in 1:length(methods)){
+  stat_multiple <- NULL
+  for(j in 1:length(n)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df_pt", (i-1)*length(n)+j)))
+  }
+  stat_multiple <- cbind(stat_multiple, c(rep(n, each = length(eval_times) * 9)))
+  colnames(stat_multiple)[5] <- "n"
+  plot_all_stat_ptn <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n), col = as.factor(n), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", ", method_names[i]), color = "Sample size", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
+  print(plot_all_stat_ptn)
+  assign(paste0("plot_all_stat_ptn", i), plot_all_stat_ptn)
+}
+
+all_stat_plot_ptn <- ggarrange(plot_all_stat_ptn1, plot_all_stat_ptn2, plot_all_stat_ptn3, 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+ggsave(file = paste0("Scenario", scenario, "gg_compprobs.eps"), plot = all_stat_plot_ptn, width = 5.5, height = 3, units = "in", scale = 1.7)
+```
+
+Compare between methods for fixed n.
+
+
+```{r}
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+
+
+for(i in 1:length(n)){
+  stat_multiple <- NULL
+  for(j in 1:length(methods)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df_pt", i + length(n)*(j-1))))
+  }
+  stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * n_states * 3)))
+  colnames(stat_multiple)[5] <- "Method"
+  plot_all_stat_pt <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
+  print(plot_all_stat_pt)
+  assign(paste0("plot_all_stat_pt", i), plot_all_stat_pt)
+}
+
+all_stat_plot_pt <- ggarrange(plot_all_stat_pt1, plot_all_stat_pt2, plot_all_stat_pt3, 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+
+ggsave(file = paste0("Scenario", scenario, "gg_probs.eps"), plot = all_stat_plot_pt, width = 5.5, height = 3, units = "in", scale = 1.7)
+
+```
+
+
+
+
+
+
+
+## Combination plots
+
+for n = 500, plot cumulative intensities and transition probabilities
+
+```{r}
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+
+#only for n = 500
+k <- 3
+
+
+stat_multiple <- NULL
+for(j in 1:length(methods)){
+  stat_multiple <- rbind(stat_multiple, get(paste0("stat_df_pt", k + length(n)*(j-1))))
+}
+stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * n_states * 3)))
+colnames(stat_multiple)[5] <- "Method"
+comb_plot <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
+
+
+
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("binomial", "poisson", "msm")
+
+
+
+stat_multiple <- NULL
+for(j in 1:length(methods)){
+  stat_multiple <- rbind(stat_multiple, get(paste0("stat_df", k + length(n)*(j-1))))
+}
+stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * 9)))
+colnames(stat_multiple)[5] <- "Method"
+comb_plot2 <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Cumulative Intensities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names)
+
+
+
+
+
+
+all_comb_plot <- ggarrange(comb_plot, comb_plot2, 
+          labels = c("A", "B"),
+          ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+ggsave(file = paste0("Scenario", scenario, "gg_combplot.eps"), plot = all_comb_plot, width = 5.5, height = 3, units = "in", scale = 1.7)
+
+```
+
+
+
