@@ -322,16 +322,6 @@ load("toothMSMHom.Rdata")
 
 
 
-# Try with simpler data to fit Homogeneous model
-
-```{r eval = FALSE}
-gd_msm_simple <- subset(gd_msm, state != 6 & state != 7)
-gd_msm_simple <- subset(gd_msm_simple, id!=3569)
-qmat_try_simple <- crudeinits.msm(state ~ time, id, qmatrix[1:5, 1:5], data = gd_msm_simple)
-qmat_try_simple[5, 5] <- -0.1
-
-toothMSMHom_simple <- msm::msm(state ~ time, data = gd_msm_simple, subject = id, qmatrix = qmat_try_simple, gen.inits = FALSE, pci = c(first_nonzero, max_times), control=list(fnscale=12000, maxit = 1000))
-```
 
 
 # Plotting functions from mstate package (descriptives of data set)
@@ -495,11 +485,8 @@ fit2_plot_new <- ggplot() +
 
 library(ggpubr)
 
-#qwe <- ggarrange(a, fit1_plot, fit2_plot, ncol = 3, labels = "AUTO", legend = "bottom")
+#qwe <- ggarrange(a, fit1_plot_new, fit2_plot_new, ncol = 3, labels = "AUTO", legend = "bottom")
 #ggsave(file = "CumHazTandMob.eps", plot = qwe, width = 5.5, height = 3, units = "in", scale = 1.7)
-
-qwe <- ggarrange(a, fit1_plot_new, fit2_plot_new, ncol = 3, labels = "AUTO", legend = "bottom")
-ggsave(file = "CumHazTandMob.eps", plot = qwe, width = 5.5, height = 3, units = "in", scale = 1.7)
 
 ```
 
