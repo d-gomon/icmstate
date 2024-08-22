@@ -365,39 +365,10 @@ pre code {
 </div>
 
 
-<div id="r_adni_analysis" class="section level1">
-<h1>R_ADNI_Analysis</h1>
-<p>Code used to analyze the <a href="https://adni.loni.usc.edu/">ADNI</a> data set.</p>
-<div id="the-three-steps-of-the-application." class="section level2">
-<h2>The three steps of the application.</h2>
-<ul>
-<li><strong>Step 1. Data preparation</strong></li>
-</ul>
-<p>Removing patients from the analysis, converting to the correct format, creating long data frames. This process is described in the file <code>1_prepare_data.R</code>.</p>
-<ul>
-<li><strong>Step 2. Data conversion to mFData</strong></li>
-</ul>
-<p>As we use the forked <a href="https://github.com/d-gomon/MFPCA">MFPCA</a> package, we first need to convert the data to the mFData format (see <a href="https://github.com/ClaraHapp/funData">funData</a>). This process is described in <code>2_data_to_mFData.R</code>.</p>
-<ul>
-<li><strong>Step 3. Application of methods to the resulting data set</strong></li>
-</ul>
-<p>The <span class="math inline">\(6\)</span> described methods are applied to the data in <code>3_apply_methods_mFData.Rmd</code>.</p>
-</div>
-<div id="two-additional-steps" class="section level2">
-<h2>Two additional steps</h2>
-<ul>
-<li><strong>Step 0. Function utility</strong></li>
-</ul>
-<p>Functions used in step 1 to prepare the data. See <code>0_function_utility.R</code>.</p>
-<ul>
-<li><strong>Step 4. Data Summary</strong></li>
-</ul>
-<p>Some summaries used to describe the data set. See <code>4_Data_Summaries.R</code></p>
-</div>
-<div id="figures" class="section level2">
-<h2>Figures</h2>
-<p>The four resulting figures from Step 3 are attached in the subdirectory <code>Figures</code>.</p>
-</div>
+<div id="analysis-of-the-signal-tandmobiel-study" class="section level1">
+<h1>Analysis of the Signal Tandmobiel study</h1>
+<p>Code used to analyze the <a href="https://lstat.kuleuven.be/consulting/Showcases/SignalTandmobielStudy.pdf">Signal Tandmobiel</a> data set.</p>
+<p>All analyses are described in the <code>tandmobAll.Rmd</code> file.</p>
 </div>
 
 
