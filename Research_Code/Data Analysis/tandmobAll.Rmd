@@ -232,7 +232,7 @@ visdat <- data.frame(left = subset(gdtemp, state == 4)$time,
                      event = rep(3, 170))
 
 #Make a plot to check the intervals
-asd <- survfit(Surv(left, right, event, type = "interval2") ~ 1, data = visdat)
+asd <- survfit(Surv(left, right, event, type = "interval") ~ 1, data = visdat)
 plot(asd)
 ```
 
