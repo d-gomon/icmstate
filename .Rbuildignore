@@ -1,0 +1,5 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^Old Functions
+^BenchUtilFunctions
+^Research_Code
