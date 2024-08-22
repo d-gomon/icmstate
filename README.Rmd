@@ -53,7 +53,7 @@ devtools::install_github("d-gomon/icmstate")
 
 ## References
 
-Gomon D., Putter H., Nelissen R.G.H.H., van der Pas S (2022): [CGR-CUSUM: A Continuous time Generalized Rapid Response Cumulative Sum chart](https://doi.org/10.1093/biostatistics/kxac041), *Biostatistics*
+Gomon D., Putter H. (2024): [Non-parametric estimation of transition intensities in interval censored Markov multi-state models without loops](https://arxiv.org/abs/2205.07618), *arXiv*
 
 Gu Y., Zeng D., Heiss G., Lin D. Y. (2023): [Maximum likelihood estimation for semiparametric regression models with interval-censored multistate data](https://doi.org/10.1093/biomet/asad073), *Biometrika*
 
