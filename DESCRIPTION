@@ -1,10 +1,10 @@
 Package: icmstate
 Type: Package
 Title: Non-parametric estimation of transition intensities in interval-censored multi-state models.
-Version: 2024.05.17
+Version: 2024.08.28
 Date: 2023-06-28
 Author: Daniel Gomon
-Maintainer: Daniel Gomon <d.gomon@math.leidenuniv.nl>
+Maintainer: Daniel Gomon <dgstatsoft@gmail.com>
 Description: Allows for the estimation of transition intensities in interval-censored
     multi-state models using the approach of Gomon and Putter (Multinomial likelihood) or 
     Gu et al. (Poisson likelihood).
