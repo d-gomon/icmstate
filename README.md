@@ -30,8 +30,10 @@ utilities for plotting panel data and transition probabilities between
 states. Many of the functions from the package can be used for
 visualisation as well. The package currently supports two approaches to
 determine transition intensities, either using the Multinomial
-likelihood approach as in Gomon & Putter or the latent Poisson approach
-as in Gu et al. (2023).
+likelihood approach as in [Gomon and Putter
+(2024)](https://doi.org/10.48550/arXiv.2409.07176) or the latent Poisson
+approach as in [Gu et
+al. (2023)](https://doi.org/10.1093/biomet/asad073).
 
 ## Installation
 
@@ -42,11 +44,17 @@ Install the development version from [GitHub](https://github.com/) with:
 devtools::install_github("d-gomon/icmstate")
 ```
 
+## Research Code
+
+The results of [Gomon and Putter
+(2024)](https://doi.org/10.48550/arXiv.2409.07176) can be reproduced
+using the code in the folder `Research_Code`.
+
 ## References
 
 Gomon D., Putter H. (2024): [Non-parametric estimation of transition
 intensities in interval censored Markov multi-state models without
-loops](https://arxiv.org/abs/2205.07618), *arXiv*
+loops](https://doi.org/10.48550/arXiv.2409.07176), *arXiv*
 
 Gu Y., Zeng D., Heiss G., Lin D. Y. (2023): [Maximum likelihood
 estimation for semiparametric regression models with interval-censored
