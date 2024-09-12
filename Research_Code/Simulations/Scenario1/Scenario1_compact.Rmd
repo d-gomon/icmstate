@@ -297,7 +297,7 @@ for(i in 1:nrow(load_names)){
 oracle_df_pt <- probtrans_weib(transMat = get(var_names[1])[[1]]$tmat, times = eval_times, shapes = shapes, scales = scales, type = "prodint")[[from]]
 
 for(i in 1:nrow(load_names)){
-  assign(paste0("summary_df_pt", i), suppressWarnings(create_summary_df_pt(get(var_names[i]), eval_times = eval_times)))
+  assign(paste0("summary_df_pt", i), suppressWarnings(create_summary_df_pt(get(var_names[i]), eval_times = eval_times, from = from)))
 }
 for(i in 1:nrow(load_names)){
   assign(paste0("stat_df_pt", i), extract_summary_stat_pt(summary_df = get(paste0("summary_df_pt", i)), oracle_df = oracle_df_pt, eval_times = eval_times))
