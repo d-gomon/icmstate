@@ -11,7 +11,6 @@
 #' removed in the plot. Default is TRUE
 #' @param cutoff cutoff value for numerically determining the support using
 #' \code{\link{support_npmsm}}
-#' @param ... Further arguments to plot
 #' 
 #' @import checkmate
 #' @import ggplot2
@@ -19,7 +18,7 @@
 #' 
 #' @export
 
-visualise_msm <- function(gd, npmsm, neat = TRUE, cutoff, ...){
+visualise_msm <- function(gd, npmsm, neat = TRUE, cutoff){
   
   # Remove CRAN notes
   id <- ID <- t1 <- t2 <- color <- state1 <- state2 <- NULL
