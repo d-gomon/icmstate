@@ -23,6 +23,7 @@
 #' @export
 #' @importFrom mstate probtrans
 #' @importFrom deSolve ode
+#' @importFrom stats pweibull
 #' 
 #' @examples 
 #' #Illness-death model

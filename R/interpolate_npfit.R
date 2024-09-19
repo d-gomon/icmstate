@@ -34,7 +34,7 @@ interpol_msfit <- function(msfit, times){
   out <- NULL
   #We interpolate for each transition separately.
   for (i in 1:M){
-    Haz <- rbind(c(0, 0, i), subset(msfit$Haz, trans == i))
+    Haz <- rbind(c(0, 0, i), msfit$Haz[msfit$Haz$trans == i,])
     supp <- numeric_support[[i]]$support[, c(1,2), drop = FALSE]
     
     #If there is no support set

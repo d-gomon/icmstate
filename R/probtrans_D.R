@@ -257,7 +257,7 @@ get_intensity_matrices <- function(object){
   
   #Determine intensities
   for(k in 1:n_trans){
-    t_obj <- subset(object$Haz, trans == k)
+    t_obj <- object$Haz[object$Haz$trans == k,]
     intensities <- diff(c(0, t_obj$Haz))
     from <- tmat2$from[k]
     to <- tmat2$to[k]

@@ -23,6 +23,8 @@
 #' 
 #' @export
 #' 
+#' @importFrom stats rweibull runif
+#' 
 #' @examples 
 #' eval_times <- function(n_obs, stop_time){
 #'   cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
@@ -125,7 +127,7 @@ inverse_weib_cdf <- function(t, s, shape, scale){
 #' @keywords internal
 #' @noRd
 #' 
-#' 
+#' @importFrom stats rweibull runif
 #' 
 #' 
 #' 

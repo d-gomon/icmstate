@@ -1,5 +1,6 @@
 #' Find crude initial estimates for the transition intensities in an interval-
-#' censored Markov Multi State model without loops.
+#' censored Markov Multi State model without loops. Development of this 
+#' function was abandoned due to a lack of good ideas on how to proceed.
 #' 
 #' 
 #' @description The crude initial estimates are determined by dividing the 
@@ -87,7 +88,7 @@ crudeinit.npmsm <- function(gd, taus, tmat){
     corresponding_unique_transition <- prodlim::row.match(current_trans[, c("from", "to")], unique_transitions)
     contribute_transitions <- trans_contribution[[corresponding_unique_transition]]
     
-    d_init[wh, contribute_transition, current_trans[, "id"]] <- 1
+    d_init[wh, contribute_transitions, current_trans[, "id"]] <- 1
     
     
   }
