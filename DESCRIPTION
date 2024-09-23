@@ -16,12 +16,14 @@ Imports:
     igraph (>= 1.3.0),
     checkmate,
     ggplot2,
-    deSolve
+    deSolve,
+    msm
 LinkingTo: Rcpp
 Suggests: 
     testthat (>= 3.0.0),
     icenReg,
-    msm
+    profvis,
+    survival
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2
 Encoding: UTF-8

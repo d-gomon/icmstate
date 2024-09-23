@@ -5,7 +5,7 @@
 #' These then determine the numerical support of the transition.
 #' 
 #' 
-#' @param npmsm Output from \code{\link{npmsm}} function or an \code{\link[mstate::msfit]{msfit}} object.
+#' @param npmsm Output from \code{\link{npmsm}} function or an \code{\link[mstate:msfit]{msfit}} object.
 #' @param cutoff Above which value is a mass in a bin considered to be non-zero? 
 #' Default = 1e-8. Note that this is independent of bin size, so can be tricky!!
 #' 

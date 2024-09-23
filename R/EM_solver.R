@@ -6,8 +6,8 @@
 #' @param data_idx List containing data, outputted from \code{\link{msm_frydman}}
 #' @param supportMSM List containing data on the support of the 1->2 transition,
 #' output from supportMSM()
-#' @param z Initial values for F_{12} and F_{13}, used to initiate the EM alg.
-#' @param lambda Initial values for Lambda_{23}, used to initiate the EM alg.
+#' @param z Initial values for \eqn{F_{12}}{F_(12)} and \eqn{F_{13}}{F_(13)}, used to initiate the EM alg.
+#' @param lambda Initial values for \eqn{\Lambda_{23}}{Lambda_(23)}, used to initiate the EM alg.
 #' @param tol Tolerance of the EM algorithm. When the change in sum(abs(z)) and 
 #' sum(abs(lambda)) no longer exceeds tol, the algorithm stops.
 #' 

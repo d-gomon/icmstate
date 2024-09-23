@@ -7,7 +7,7 @@
 support_npmsm(npmsm, cutoff = 1e-08)
 }
 \arguments{
-\item{npmsm}{Output from \code{\link{npmsm}} function or an \code{\link[mstate::msfit]{msfit}} object.}
+\item{npmsm}{Output from \code{\link{npmsm}} function or an \code{\link[mstate:msfit]{msfit}} object.}
 
 \item{cutoff}{Above which value is a mass in a bin considered to be non-zero? 
 Default = 1e-8. Note that this is independent of bin size, so can be tricky!!}

@@ -28,15 +28,19 @@
 #' @examples 
 #' #Illness-death model
 #' tmat <- mstate::trans.illdeath()
-#' IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
-#' IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
+#' IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+#'                       scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
+#' IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+#'                        scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
 #' plot(IDM)
 #' plot(IDM2)
 #' 
 #' #Extended illness-death model
 #' tmat <- mstate::transMat(list(c(2, 3), c(4), c(), c()))
-#' IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
-#' IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
+#' IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+#'                       scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
+#' IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+#'                        scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
 #' plot(IDM)
 #' plot(IDM2)
 #' 
@@ -61,7 +65,7 @@ probtrans_weib <- function(transMat, times, shapes, scales, type = c("prodint", 
     Haz_mat <- matrix(NA, nrow = M*length(times), ncol = 3)
     for(i in 1:M){
       Haz_mat[(1+(i-1)*n_times):(i*n_times), ] <- matrix(c(times, 
-                                      -pweibull(times, shapes[i], scales[i], lower = FALSE, log = TRUE),
+                                      -pweibull(times, shapes[i], scales[i], lower.tail = FALSE, log.p = TRUE),
                                       rep(i, length(times))), ncol = 3)
     }
     colnames(Haz_mat) <- c("time", "Haz", "trans")

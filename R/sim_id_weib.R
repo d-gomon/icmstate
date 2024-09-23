@@ -15,9 +15,11 @@
 #' @param stop_time Largest time at which the model is considered.
 #' @param eval_times A function which returns the evaluation times for a subject.
 #' Must have as arguments at least \code{n_obs} and \code{stop_times}.
-#' @param shape Vector of shape parameters for the 3 transitions. See \code{\link[stats::rweibull]{rweibull}}.
+#' @param start_state In which states can subjects start? Either everyone starts 
+#' in state 1 ("stable") or equal probability to start in state 1 or 2 ("equalprob").
+#' @param shape Vector of shape parameters for the 3 transitions. See \code{\link[stats:rweibull]{rweibull}}.
 #' The first entry will be used for the first transition and so on.
-#' @param scale Vector of scale parameters for the 3 transitions. See \code{\link[stats::rweibull]{rweibull}}
+#' @param scale Vector of scale parameters for the 3 transitions. See \code{\link[stats:rweibull]{rweibull}}
 #' The first entry will be used for the first transition and so on.
 #' @param ... Further parameters to \code{eval_times} function.
 #' 

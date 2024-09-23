@@ -36,15 +36,19 @@ hazards for the transitions.
 \examples{
 #Illness-death model
 tmat <- mstate::trans.illdeath()
-IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
-IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
+IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+                      scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
+IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+                       scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
 plot(IDM)
 plot(IDM2)
 
 #Extended illness-death model
 tmat <- mstate::transMat(list(c(2, 3), c(4), c(), c()))
-IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
-IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
+IDM <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+                      scales = c(5, 10, 10/gamma(1.5)), type = "prodint")
+IDM2 <- probtrans_weib(tmat, seq(0, 15, 0.01), shapes = c(0.5, 0.5, 2), 
+                       scales = c(5, 10, 10/gamma(1.5)), type = "ODE")
 plot(IDM)
 plot(IDM2)
 

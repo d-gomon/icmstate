@@ -12,9 +12,9 @@ EM_solver(data_idx, supportMSM, z, lambda, tol = 1e-08)
 \item{supportMSM}{List containing data on the support of the 1->2 transition,
 output from supportMSM()}
 
-\item{z}{Initial values for F_{12} and F_{13}, used to initiate the EM alg.}
+\item{z}{Initial values for \eqn{F_{12}}{F_(12)} and \eqn{F_{13}}{F_(13)}, used to initiate the EM alg.}
 
-\item{lambda}{Initial values for Lambda_{23}, used to initiate the EM alg.}
+\item{lambda}{Initial values for \eqn{\Lambda_{23}}{Lambda_(23)}, used to initiate the EM alg.}
 
 \item{tol}{Tolerance of the EM algorithm. When the change in sum(abs(z)) and 
 sum(abs(lambda)) no longer exceeds tol, the algorithm stops.}

@@ -9,22 +9,22 @@ test_that("Correct hazard when generating", {
   qwe <- reshape(asd, direction = "wide", idvar = "id", timevar = "state")
   qwe$status <- rep(1, nrow(qwe))
   
-  library(survival)
+
   #Need to set transition times to 3 to censored so we can estimate correct cumulative hazard
   #From 1 to 2:
   dat1 <- qwe
   dat1[is.na(dat1[, "time.2"]), "status"] <- 0
   dat1[is.na(dat1[, "time.2"]), "time.2"] <- dat1[is.na(dat1[, "time.2"]), "time.3"]
-  first_trans <- survfit(Surv(time.2, status) ~ 1, data = dat1)
+  first_trans <- survival::survfit(Surv(time.2, status) ~ 1, data = dat1)
   
   #From 1 to 3
   dat2 <- qwe
   dat2[!is.na(dat2[, "time.2"]), "status"] <- 0
   dat2[!is.na(dat2[, "time.2"]), "time.3"] <- dat2[!is.na(dat2[, "time.2"]), "time.2"]
-  second_trans <- survfit(Surv(time.3, status) ~ 1, data = dat2)
+  second_trans <- survival::survfit(Surv(time.3, status) ~ 1, data = dat2)
   
   #From 2 to 3:
-  third_trans <- survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
+  third_trans <- survival::survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
   
   
   #Make plots:
@@ -50,23 +50,22 @@ test_that("Correct hazard when generating", {
   qwe <- reshape(asd, direction = "wide", idvar = "id", timevar = "state")
   qwe$status <- rep(1, nrow(qwe))
   
-  library(survival)
   #Need to set transition times to 3 to censored so we can estimate correct cumulative hazard
   #From 1 to 2:
   dat1 <- qwe
   dat1[is.na(dat1[, "time.2"]), "status"] <- 0
   dat1[is.na(dat1[, "time.2"]), "time.2"] <- dat1[is.na(dat1[, "time.2"]), "time.3"]
   dat1 <- dat1[!dat1[, "time.2"] == 0,]
-  first_trans <- survfit(Surv(time.2, status) ~ 1, data = dat1)
+  first_trans <- survival::survfit(Surv(time.2, status) ~ 1, data = dat1)
   
   #From 1 to 3
   dat2 <- qwe
   dat2[!is.na(dat2[, "time.2"]), "status"] <- 0
   dat2[!is.na(dat2[, "time.2"]), "time.3"] <- dat2[!is.na(dat2[, "time.2"]), "time.2"]
-  second_trans <- survfit(Surv(time.3, status) ~ 1, data = dat2)
+  second_trans <- survival::survfit(Surv(time.3, status) ~ 1, data = dat2)
   
   #From 2 to 3:
-  third_trans <- survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
+  third_trans <- survival::survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
   
   
   #Make plots:
@@ -93,23 +92,23 @@ test_that("Correct hazard when generating", {
   qwe <- reshape(asd, direction = "wide", idvar = "id", timevar = "state")
   qwe$status <- rep(1, nrow(qwe))
   
-  library(survival)
+
   #Need to set transition times to 3 to censored so we can estimate correct cumulative hazard
   #From 1 to 2:
   dat1 <- qwe
   dat1[is.na(dat1[, "time.2"]), "status"] <- 0
   dat1[is.na(dat1[, "time.2"]), "time.2"] <- dat1[is.na(dat1[, "time.2"]), "time.3"]
   dat1 <- dat1[!dat1[, "time.2"] == 0,]
-  first_trans <- survfit(Surv(time.2, status) ~ 1, data = dat1)
+  first_trans <- survival::survfit(Surv(time.2, status) ~ 1, data = dat1)
   
   #From 1 to 3
   dat2 <- qwe
   dat2[!is.na(dat2[, "time.2"]), "status"] <- 0
   dat2[!is.na(dat2[, "time.2"]), "time.3"] <- dat2[!is.na(dat2[, "time.2"]), "time.2"]
-  second_trans <- survfit(Surv(time.3, status) ~ 1, data = dat2)
+  second_trans <- survival::survfit(Surv(time.3, status) ~ 1, data = dat2)
   
   #From 2 to 3:
-  third_trans <- survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
+  third_trans <- survival::survfit(Surv(time.2, time.3, status) ~ 1, data = subset(qwe, !is.na(time.2)))
   
   
   #Make plots:

@@ -36,18 +36,17 @@ test_that("profiling", {
   })
   
   
-  library(tictoc)
   
-  tic("old")
-  b_old <- npmsm(gd = gd, tmat = tmat, tol = 1e-2)
-  toc()
-  
-  tic("new")
-  b_new <- npmsm(gd = gd, tmat = tmat, tol = 1e-2)
-  toc()
-  
-  tic("new rm bins")
-  b_new_rm <- npmsm(gd = gd, tmat = tmat, tol = 1e-2, remove_bins = TRUE)
-  toc()
+  # tictoc::tic("old")
+  # b_old <- npmsm(gd = gd, tmat = tmat, tol = 1e-2)
+  # toc()
+  # 
+  # tictoc::tic("new")
+  # b_new <- npmsm(gd = gd, tmat = tmat, tol = 1e-2)
+  # toc()
+  # 
+  # tictoc::tic("new rm bins")
+  # b_new_rm <- npmsm(gd = gd, tmat = tmat, tol = 1e-2, remove_bins = TRUE)
+  # toc()
 })
 

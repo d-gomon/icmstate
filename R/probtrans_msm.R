@@ -1,16 +1,21 @@
 #' Given a \code{msm} object, determine the transition probabilities (forward) 
 #' at the specified times, starting from the smallest specified time.
 #'
-#' @description The output is similar to probtrans from the mstate package.
+#' @description The main use of this function is to extract transition 
+#' probabilities (as in \code{\link[mstate:probtrans]{probtrans}})  from an 
+#' \code{\link[msm:msm]{msm}} object. Functions from the \code{mstate} package
+#' can then be used for further inspection.
+#' 
+#' 
 #'
 #' @param msm A \code{msm} object.
-#' @param trans A transition number for which the interpolated hazard should be 
-#' returned
+#' @param times A vector of times at which the transition probabilities should 
+#' be determined.
 #'
 #' @return A \code{probtrans} object containing the estimated transition probabilities.
 #'
 #' @export
-#' @noRd
+#' @importFrom msm pmatrix.msm
 #'
 
 
