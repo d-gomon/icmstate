@@ -1,0 +1,41 @@
+---
+title: "Overview"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+#build_vignettes
+```
+
+```{r setup}
+library(icmstate)
+```
+
+
+The \texttt{icmstate} package can be used to non-parametrically estimate the transition intensities in interval-censored multi-state models. In this vignette, we first give a brief introduction to interval-censored data and multi-state modelling. Afterwards, we focus \@ref(Introduction)
+
+
+# Introduction \label{Introduction}
+
+
+
+
+
+
+
+
+
+
+
+

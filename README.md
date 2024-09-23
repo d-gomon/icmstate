@@ -34,8 +34,8 @@ be used for visualisation as well. The package currently supports two
 approaches to determine transition intensities, either using the
 Multinomial likelihood approach as in [Gomon and Putter
 (2024)](https://doi.org/10.48550/arXiv.2409.07176) or the latent Poisson
-approach as in [Gu et
-al. (2023)](https://doi.org/10.1093/biomet/asad073).
+approach as in [Gu et al
+(2023)](https://doi.org/10.1093/biomet/asad073).
 
 ## Installation
 

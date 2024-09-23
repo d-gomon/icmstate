@@ -23,7 +23,10 @@ Suggests:
     testthat (>= 3.0.0),
     icenReg,
     profvis,
-    survival
+    survival,
+    knitr,
+    rmarkdown
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2
 Encoding: UTF-8
+VignetteBuilder: knitr

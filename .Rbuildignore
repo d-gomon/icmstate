@@ -6,3 +6,5 @@
 ^codecov\.yml$
 ^README\.Rmd$
 ^LICENSE$
+^doc$
+^Meta$

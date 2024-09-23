@@ -7,3 +7,6 @@ src/*.so
 src/*.dll
 Old Functions/
 BenchUtilFunctions/
+inst/doc
+/doc/
+/Meta/
