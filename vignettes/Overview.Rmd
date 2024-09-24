@@ -1,16 +1,27 @@
 ---
 title: "Overview"
 output: 
-  pdf_document: default
-  number_sections: true
+  bookdown::pdf_document2: 
+    toc: false
+    number_sections: true
+    citation_package: natbib
+    highlight: tango
 vignette: >
   %\VignetteIndexEntry{Overview}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{rmarkdown::pdf_document}
   %\VignetteEncoding{UTF-8}
 bibliography: references.bib
 header-includes: 
   - \usepackage{tikz}
   - \usepackage{pgfplots}
+  - \pgfplotsset{compat=1.7}
+  - \usepackage{caption}
+  - \usepackage{amsmath}
+  - \usepackage{mathtools}
+  - \usepackage{dsfont}
+  - \usepackage{prodint}
+  - \usepackage{makecell}
+  - \usepackage{booktabs}
 ---
 
 <!-- output:  -->
@@ -33,7 +44,7 @@ library(icmstate)
 
 The `icmstate` package can be used to non-parametrically estimate the transition intensities in interval-censored multi-state models. 
 
-In this vignette, we first give a brief [introduction](#Introduction) to [interval-censored data](#interval-censoring) and [multi-state modelling](#multi-state-modelling). The combination of these two results in [panel data](#panel-data). Afterwards, we focus on the possible approaches for [non-parametric estimation](#Estimation) present in this package. We demonstrate the use of this package using an [example](#Example).
+In this vignette, we first give a brief [introduction](#Introduction) to [interval-censored data](#interval-censoring) and [multi-state modelling](#multi-state-modelling). The combination of these two results in [panel data](#panel-data). Afterwards, we focus on the possible approaches for [non-parametric estimation](#Estimation) present in this package. We demonstrate the use of this package using an [example](#Example) and compare the estimates of this package to [known results](#Known-results). 
 
 
 # Introduction {#Introduction}
@@ -48,9 +59,10 @@ Although data from such studies is clearly better described using interval-censo
 
 ## Multi-state modelling {#multi-state-modelling}
 
-Sometimes the available data is not well described by the simple survival setting, warranting the use of a more complicated multi-state model. In a multi-state model subjects can transition between different states, with the transition rate between states being of interest for estimation. The illness-death model is a famous example of a multi-state model, 
+Sometimes the available data is not well described by the simple survival setting, warranting the use of a more complicated multi-state model. In a multi-state model subjects can transition between different states, with the transition rate between states being of interest for estimation. The (extended) illness-death model is a famous example of a multi-state model, see Figure \@ref(fig:IDM).
 
-
+\begin{figure}[!ht]
+\centering
 \begin{tikzpicture}
         \node (alive) [ draw, thick, rectangle, minimum width=2cm, minimum height = 1.5cm] at (0,0cm) {1. Alive};
         \node (illness) [ draw, thick, rectangle, minimum width=2cm, minimum height = 1.5cm] at (1.5,2cm) {2. Illness};
@@ -61,34 +73,130 @@ Sometimes the available data is not well described by the simple survival settin
         \draw[->, thick, dashed] (illness) -- (deathafterillness);
         \draw[->, thick] (alive) -- (death);
 \end{tikzpicture}
+\caption{Graphical representation of the (extended) illness-death model. Extended: solid and dashed lines. Standard: solid and dotted lines.}
+\label{fig:IDM}
+\end{figure}
 
-* More complicated data, not well described by simple survival setting.
-* Introduce illness-death model, tikz picture
+
+
+
+
 
 ## Panel data {#panel-data}
 
+When the state of subjects is observed intermittently, we obtain so called *panel data*. Such data is best described by an interval-censored multi-state model, as the exact transition times between states are not known. Additionally, it can be unclear exactly which transitions have been made between two observation times, as multi-state models can be quite complex. 
+
+It sometimes occurs that the entry time into a subset of the states is always observed at an exact time. For example, in the illness-death model (Figure \@ref(fig:IDM)) it is reasonable to assume that the time of entry into the death state will be observed exactly. We will therefore also consider panel data with a mix of interval- and right-censored data.
+
+
 # Estimation {#Estimation}
 
+The `icmstate` package can be used to non-parametrically estimate the transition intensities in interval-censored Markov multi-state models. The intensities are given by:
+\begin{align*}
+\alpha_{gh}(t) &= \lim_{dt \downarrow 0} \frac{\mathbb{P}(X(t + dt) = h | X(t) = g, \mathcal{F}_{t-})}{dt} = \lim_{dt \downarrow 0} \frac{\mathbb{P}(X(t + dt) = h | X(t) = g)}{dt},
+\end{align*} with $X(t)$ the state of the process at time $t$ and $g, h \in \mathcal{H}$ the possible states in the model. Let $A_{gh}(t) = \int_0^t \alpha_{gh}(s) ds$ denote the cumulative transition intensity for the transition $g \to h$.
 
+
+Having obtained estimates of the transition intensities, it is then possible to estimate transition probabilities via product integration by the Chapman-Kolmogorov Equations:
+\begin{align} \label{eq:transprobprodint}
+    \mathbf{P}(s,t) = \Prodi_{s < u \leq t} \left( \mathbf{I} + \textrm{d}\mathbf{A}(u) \right).
+\end{align} $\mathbf{P}(s,t)$ is then the matrix containing the transition probabilities:
+\begin{align*}
+P_{gh}(s, t) = \mathbb{P}(X(t) = h | X(s) = g).
+\end{align*} Letting $H = |\mathcal{H}|$, $\mathbf{I}$ is the $H \times H$ identity matrix and $\textrm{d}\mathbf{A}(u)$ the matrix containing the transition intensities.
+
+
+
+## Methods
+
+
+The transition intensities are estimated using an EM algorithm. Two approaches are implemented in this package, described in the table below.
 
 
 | Method          | Likelihood    | Exactly observed states  | R function |
 | ----------------|---------| ------------| -------------- |
-| @GomonPutter2024  | Multinomial| Implemented | `npmsm(, method = "binomial")` |
-| @Gu2023        | Poisson    | Not implemented | `npmsm(, method = "poisson")` |
+| @GomonPutter2024  | Multinomial| Implemented | `npmsm(..., method = "binomial")` |
+| @Gu2023        | Poisson    | Not implemented | `npmsm(..., method = "poisson")` |
+
+
+The methods differ mostly in which complete-data likelihood is maximized, for details see the referenced articles. From here on out, we will refer to the two methods as Multinomial EM and Poisson EM.
+Although the two methods usually yield similar estimates, there are some pros and cons to each method. 
+
+* The Poisson EM estimator has been shown to be consistent when subjects can start in all non-absorbing states. This is not likely to be true for most panel data.
+* The Multinomial EM algorithm requires way less iterations to converge to an estimate than the Poisson estimator. Due to this, computation times are usually more than twice as fast.
+* The Multinomial EM algorithm allows for the incorporation of exactly observed states. Although possible with the Poisson EM algorithm as well, only a smooth approximation has been developed and is not incorporated in this package.
+* The estimates for the transition probabilities have been shown to be consistent for both methods in a simulation study (@GomonPutter2024).
+
+For most users, it should suffice to choose the appropriate method as follows:
+
+1. If subjects can be initially observed in all non-absorbing states and the cumulative intensities are of interest: Poisson EM.
+2. In all other cases, the computational advantage of the Multinomial EM algorithm will make it the more desirable choice.
+
+
+<!-- \begin{table}[!ht] -->
+<!-- \centering -->
+<!-- \begin{tabular}{|c|c|c|} -->
+<!-- \hline -->
+<!--  & Multinomial & Poisson \\ \hline -->
+<!-- pros & \makecell[c]{Fast \\ } & \makecell[c]{Consistency \\ } \\ \hline -->
+<!-- cons & \makecell[c]{d \\ f} & \makecell[c]{asd} \\ \hline -->
+<!-- \end{tabular} -->
+<!-- \caption{A table with multiple rows in one cell.} -->
+<!-- \end{table} -->
 
 
 
 
-Write here about implementation of Frydman result from 1995.
-Also write here about implementation of Hudgens results.
+
+
+
 
 
 ## Example {#Example}
 
 
+We demonstrate basic usage of this package through a simulated example.
+
+
+
+## Time homogeneous example
 
 
 
 
 
+## Known results {#Known-results}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Additional Possibilities {#Additional-possibilities}
+
+Although the non-parametric estimation of transition intensities was the main goal of this package, it has some additional possibilities which might be interesting to explore.
+
+
+## Frydman (1995) non-parametric estimator {#Frydman-NPMLE}
+
+The non-parametric estimator described in @Frydman1995 is available through the `msm_frydman()` function. It allows for the non-parametric estimation of a mix of cumulative distribution functions and cumulative intensity functions for the illness-death model with known transition paths. Details can be found in the article. This method can only be used if death times are observed exactly, and for each person it is known whether they have transitioned through illness on the way to death or not. It is therefore a very restricted version of the general NPMLE estimator described above. 
+
+The support intervals (intervals where the NPMLE assigns positive probabilities) can be determined by feeding output from `msm_frydman()` to the `support_frydman()` function.
+
+
+## Hudgens (2001/2005) support determination {#Hudgens-support}
+
+@Hudgens2005 demonstrated an earlier result for determining the support intervals of interval censored data through the use of graph theory. He further extended the theory to determine when a NPMLE actually exists in the presence of truncation. The resulting theory can be used to determine existence of an NPMLE in the case of interval censored and truncated data using the `supportHudgens()` function. 
+
+Additionally, an attempt was made to use the combination of @Hudgens2001 and @Hudgens2005 to determine the support of the general interval-censored multi-state problem. This attempt can be reproduced using the `estimate_support_msm()` function, although the resulting support intervals do not align with the empirical result of the `npmsm()` function. 

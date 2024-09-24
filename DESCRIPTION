@@ -25,7 +25,8 @@ Suggests:
     profvis,
     survival,
     knitr,
-    rmarkdown
+    rmarkdown,
+    bookdown
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2
 Encoding: UTF-8

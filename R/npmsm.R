@@ -73,14 +73,17 @@
 #' 
 #' 
 #' @examples 
+#' #Create transition matrix using mstate functionality
 #' if(require(mstate)){
 #'   tmat <- mstate::trans.illdeath()
 #' }
 #' 
+#' #Write a function for evaluation times
 #' eval_times <- function(n_obs, stop_time){
 #'   cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
 #' }
 #' 
+#' #Use built_in function to simulate from Weibull distributions for each transition
 #' sim_dat <- sim_id_weib(n = 50, n_obs = 6, stop_time = 15, eval_times = eval_times,
 #' start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
 #' 
