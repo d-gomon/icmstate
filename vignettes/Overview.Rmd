@@ -1,11 +1,21 @@
 ---
 title: "Overview"
-output: rmarkdown::html_vignette
+output: 
+  pdf_document: default
+  number_sections: true
 vignette: >
   %\VignetteIndexEntry{Overview}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: references.bib
+header-includes: 
+  - \usepackage{tikz}
+  - \usepackage{pgfplots}
 ---
+
+<!-- output:  -->
+<!--   rmarkdown::html_vignette: -->
+<!--     number_sections: true -->
 
 
 
@@ -14,24 +24,67 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-
-#build_vignettes
 ```
 
-```{r setup}
+```{r setup, echo=FALSE}
 library(icmstate)
 ```
 
 
-The \texttt{icmstate} package can be used to non-parametrically estimate the transition intensities in interval-censored multi-state models. In this vignette, we first give a brief introduction to interval-censored data and multi-state modelling. Afterwards, we focus \@ref(Introduction)
+The `icmstate` package can be used to non-parametrically estimate the transition intensities in interval-censored multi-state models. 
+
+In this vignette, we first give a brief [introduction](#Introduction) to [interval-censored data](#interval-censoring) and [multi-state modelling](#multi-state-modelling). The combination of these two results in [panel data](#panel-data). Afterwards, we focus on the possible approaches for [non-parametric estimation](#Estimation) present in this package. We demonstrate the use of this package using an [example](#Example).
 
 
-# Introduction \label{Introduction}
+# Introduction {#Introduction}
+
+## Interval-censoring {#interval-censoring}
+
+The study of partially observed outcomes is called survival analysis. Outcomes are oftentimes partially observed due to a phenomenon known as right-censoring, where an outcomes is only known to be larger than a certain value. This often occurs in medical problems, where the survival time (after surgery, treatment, ...) of a patient is only known for a set of patients. This mathematical complication can happen for a number of reasons. Either patients are not followed up for a long enough time (study period was too short) or the patient is still alive or the patient was never inspected after a certain time period had passed due to other complications. The analysis of right-censored data is very well studied.
+
+Another commonly encountered problem is interval-censoring. We speak of interval-censoring if the outcome is only known to lie between two values. An example of a setting where interval-censored data is collected is in the case of longitudinal follow-up. A patient might be assessed for the presence of a disease at multiple (scheduled) visits over a period of time. If the disease is detected at a certain visit, this means the patient has fallen ill between the previous two visit times. The exact time of infection is usually not known and nigh impossible to find out. 
+Although data from such studies is clearly better described using interval-censoring, the time of infection is often assumed to be right-censored.
+
+
+## Multi-state modelling {#multi-state-modelling}
+
+Sometimes the available data is not well described by the simple survival setting, warranting the use of a more complicated multi-state model. In a multi-state model subjects can transition between different states, with the transition rate between states being of interest for estimation. The illness-death model is a famous example of a multi-state model, 
+
+
+\begin{tikzpicture}
+        \node (alive) [ draw, thick, rectangle, minimum width=2cm, minimum height = 1.5cm] at (0,0cm) {1. Alive};
+        \node (illness) [ draw, thick, rectangle, minimum width=2cm, minimum height = 1.5cm] at (1.5,2cm) {2. Illness};
+        \node (death) [ draw, thick, rectangle, minimum width=2cm, minimum height = 1.5cm] at (3,0cm)  {3. Death};
+        \node (deathafterillness) [ draw, thick, dashed, rectangle, minimum width=2cm, minimum height = 1.5cm, text width=2cm] at (4.5,2cm) {4. Death after Illness};
+        \draw[->, thick] (alive) -- (illness);
+        \draw[->, thick, dotted] (illness) -- (death);
+        \draw[->, thick, dashed] (illness) -- (deathafterillness);
+        \draw[->, thick] (alive) -- (death);
+\end{tikzpicture}
+
+* More complicated data, not well described by simple survival setting.
+* Introduce illness-death model, tikz picture
+
+## Panel data {#panel-data}
+
+# Estimation {#Estimation}
 
 
 
 
+| Method          | Likelihood    | Exactly observed states  | R function |
+| ----------------|---------| ------------| -------------- |
+| @GomonPutter2024  | Multinomial| Implemented | `npmsm(, method = "binomial")` |
+| @Gu2023        | Poisson    | Not implemented | `npmsm(, method = "poisson")` |
 
+
+
+
+Write here about implementation of Frydman result from 1995.
+Also write here about implementation of Hudgens results.
+
+
+## Example {#Example}
 
 
 
