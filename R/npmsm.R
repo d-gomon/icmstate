@@ -20,8 +20,8 @@
 #' @param exact Numeric vector indicating to which states transitions are observed at exact times.
 #' Must coincide with the column number in \code{tmat}.
 #' @param maxit Maximum number of iterations.
-#' @param tol Tolerance of the procedure. An increase in an iteration in the 
-#' value of \code{conv_crit} of less than \code{tol} will make the procedure stop.
+#' @param tol Tolerance of the procedure. A change in the value of 
+#' \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.
 #' @param conv_crit Convergence criterion. Stops procedure when the difference 
 #' in the chosen quantity between two consecutive iterations is smaller 
 #' than the tolerance level \code{tol}. One of the following:

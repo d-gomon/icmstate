@@ -39,6 +39,7 @@ knitr::opts_chunk$set(
 
 ```{r setup, echo=FALSE}
 library(icmstate)
+set.seed(1)
 ```
 
 
@@ -106,6 +107,8 @@ P_{gh}(s, t) = \mathbb{P}(X(t) = h | X(s) = g).
 \end{align*} Letting $H = |\mathcal{H}|$, $\mathbf{I}$ is the $H \times H$ identity matrix and $\textrm{d}\mathbf{A}(u)$ the matrix containing the transition intensities.
 
 
+TEXT HERE ABOUT ASSUMPTIONS IN ESTIMATION, ONLY MASS AT UNIQUE OBSERVATION TIMES. DEFINE BINS AND TALK ABOUT CLASS OF INTENSITY FUNCTIONS BECAUSE WE DONT KNOW WHAT EXACTLY HAPPENS IN THE BINS. DEFINE THE SUPPORT INTERVALS.
+
 
 ## Methods
 
@@ -157,6 +160,85 @@ For most users, it should suffice to choose the appropriate method as follows:
 
 We demonstrate basic usage of this package through a simulated example.
 
+
+## Simple interval-censoring
+
+The simplest form of a multi-state model is a model with two states. The NPMLE for this problem was found by @Turnbull1976. We show how to fit the simplest model and compare our result with the well-known Turnbull estimator.
+
+This ``standard'' survival setting can be represented by using the following *transition* matrix:
+
+```{r}
+library(mstate)
+tmat <- transMat(x = list( c(2), c() ))
+```
+
+This transition matrix tells us that there are 2 states, with a possible transition to state $2$ from state $1$ and no transitions out of state $2$ (absorbing).
+
+We want to generate some interval-censored data. This is possible by using the `msm` package (@Jackson2011). 
+```{r}
+library(msm)
+#Absorbing state 2
+qmatrix <- rbind(
+  c(-0.1, 0.1),
+  c(0, 0)
+)
+#Number of subjects in simulated data
+n <- 10
+#Create data frame for simulation:
+simdat <- data.frame(time = c(replicate(n, seq(0, 12, by=2) + runif(7, 0, 2))),
+                     subject = rep(1:n, each = 7))
+dat <- simmulti.msm(data = simdat, qmatrix = qmatrix, start = 1)[, 1:3]
+names(dat)[1] <- "id"
+```
+
+
+We can visualise the data using the `visualise_msm()` function:
+```{r}
+visualise_msm(dat)
+```
+The visualisation will only show the observation times which are relevant for transitions, getting rid of repeated observations in the same state and observations in an absorbing state.
+
+We transform the data for use by the `icenReg` package, so we can determine the Turnbull estimator
+```{r}
+icdata <- NULL
+for(i in unique(dat$id)){
+  gdi <- subset(dat, id == i)
+  L_idx <- Position(isTRUE, gdi$state <= 1, right = TRUE)
+  L <- gdi$time[L_idx] #Exit time from state 1
+  if(L_idx < nrow(gdi)){
+    R <- gdi$time[L_idx + 1]
+  } else{
+    R <- Inf
+  }
+  icdata <- rbind(icdata, c(L, R))
+}
+icdata <- as.data.frame(icdata)
+colnames(icdata) <- c("L", "R")
+```
+
+Now we can determine the NPMLE using both methods:
+```{r}
+library(icenReg)
+SimpleMult <- npmsm(gd = dat, tmat = tmat, method = "binomial")
+Turnbull <- ic_np(cbind(L, R) ~ 0, data = icdata)
+```
+
+
+Extract statistics to compare the two:
+```{r}
+Turnbull_result <- cbind(t(Turnbull$T_bull_Intervals), matrix(Turnbull$p_hat))
+colnames(Turnbull_result) <- c("L", "R", "phat")
+Turnbull_result
+```
+Unfortunately, the Turnbull estimator usually extracts $p_{12}^k = F(\tau_k) - F(\tau_{k-1})$ instead of the intensities. It can however be shown that $\alpha_{12}^k = \frac{p_{12}^k}{S(\tau_{k-1})}$, allowing us to compare the estimates:
+```{r}
+p2 <- numeric(length(SimpleMult$A$Haz$time))
+alpha <- diff(c(0,SimpleMult$A$Haz$Haz))
+for(i in 2:length(c(0,SimpleMult$A$Haz$time))){
+  Lsurv <- probtrans(SimpleMult$A, predt = SimpleMult$A$Haz$time[i-1], direction = "fixedhorizon", variance = FALSE)[[1]][1,2]
+  p2[i] <- alpha[i] * Lsurv
+}
+```
 
 
 ## Time homogeneous example

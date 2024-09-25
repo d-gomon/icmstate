@@ -118,7 +118,9 @@ visualise_msm <- function(gd, npmsm, neat = TRUE, cutoff){
     coord_flip() +
     #theme
     theme_bw() +
-    theme(legend.position = "none")
+    theme(legend.position = "none") +
+    ylab("Time") +
+    xlab("Subject")
   ret <- list(plot = out)
   if(!missing(npmsm)){
     ret$support <- support  
