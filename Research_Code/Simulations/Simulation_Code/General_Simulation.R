@@ -19,7 +19,7 @@ args = commandArgs(trailingOnly = TRUE)
 #n
 #n_obs
 #N
-#method (Poisson/Binomial/MSM)
+#method (Poisson/multinomial/MSM)
 #RNG (integer for RNG in doRNG pkg)
 print(args)
 scenario <- as.numeric(args[1])

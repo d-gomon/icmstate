@@ -4,7 +4,7 @@
 \alias{visualise_msm}
 \title{Visualise data}
 \usage{
-visualise_msm(gd, npmsm, neat = TRUE, cutoff)
+visualise_msm(gd, npmsm, tmat, neat = TRUE, cutoff)
 }
 \arguments{
 \item{gd}{A \code{data.frame} containing the following named columns:
@@ -15,6 +15,8 @@ visualise_msm(gd, npmsm, neat = TRUE, cutoff)
 }}
 
 \item{npmsm}{Output from \code{\link{npmsm}} function}
+
+\item{tmat}{A transition matrix as created by \code{transMat}}
 
 \item{neat}{Boolean indicating whether redundant observations should be 
 removed in the plot. Default is TRUE}

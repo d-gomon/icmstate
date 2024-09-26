@@ -13,7 +13,7 @@
 
 
 print.npmsm <- function(object, ...){
-  method_used <- ifelse(object$method == "binomial", "Multinomial", "Poisson")
+  method_used <- ifelse(object$method == "multinomial", "Multinomial", "Poisson")
   crit_used <- switch(object$conv_crit, 
                       "haz" = "change in estimated intensities",
                       "prob" = "change in estimated probabilities",
@@ -27,12 +27,20 @@ print.npmsm <- function(object, ...){
     cat("Consider increasing 'maxit'.\n")
   }
   cat(paste0("Log likelihood value: ", object$ll, "\n"))
-  mle_reached <- ifelse(object$isMLE, "", "NOT ")
-  cat(paste0("NPMLE has ", mle_reached, "been reached. "))
-  if(!object$isMLE){
-    cat("Consider reducing 'tol' or increasing 'checkMLE_tol'.\n")
+  
+  #Cannot check whether MLE has been reached for Poisson
+  if(object$method == "poisson"){
+    cat("Cannot check whether NPMLE has been reached for 'method = poisson'.")
   } else{
-    cat("\n")
+    mle_reached <- ifelse(object$isMLE, "", "NOT ")
+    cat(paste0("NPMLE has ", mle_reached, "been reached. "))
+    if(!object$isMLE){
+      cat("Consider reducing 'tol' or increasing 'checkMLE_tol'.\n")
+    } else{
+      cat("\n")
+    }
+    cat(paste0("Conclusion based on checking reduced_gradient < ", object$checkMLE_tol))
   }
-  cat(paste0("Conclusion based on checking reduced_gradient < ", object$checkMLE_tol))
+  
+  
 }

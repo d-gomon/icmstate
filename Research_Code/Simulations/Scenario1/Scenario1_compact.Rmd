@@ -18,7 +18,7 @@ scenario <- 1 #Choose from 1:4
 n <- c(100, 300, 500) #Remove one if no files
 n_obs <- c(6) #At most c(3,6)
 N <- 1000
-methods <- c("binomial", "poisson", "msm")
+methods <- c("multinomial", "poisson", "msm")
 
 eval_times <- seq(0, 15, 0.1)
 w_shapes <- c(0.5, 0.5, 2)
@@ -320,7 +320,7 @@ Compare the statistics as n increases within methods.
 trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 for(i in 1:length(methods)){
@@ -351,7 +351,7 @@ Compare between methods for fixed n.
 trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 for(i in 1:length(n)){
@@ -390,7 +390,7 @@ Compare the statistics as n increases within methods.
 trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 for(i in 1:length(methods)){
   stat_multiple <- NULL
@@ -418,7 +418,7 @@ Compare between methods for fixed n.
 trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 
@@ -457,7 +457,7 @@ for n = 500, plot cumulative intensities and transition probabilities
 trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 #only for n = 500
@@ -477,7 +477,7 @@ comb_plot <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = inter
 trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
-names(method_names) <- c("binomial", "poisson", "msm")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 

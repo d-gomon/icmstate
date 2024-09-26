@@ -1,7 +1,7 @@
 #' Helper function for npmsm()
 #' 
 #' @description For a general Markov chain multi-state model with interval censored 
-#' transitions calculate the NPMLE using an EM algorithm with binomial approach
+#' transitions calculate the NPMLE using an EM algorithm with multinomial approach
 #' 
 #' 
 #' @param gd A \code{data.frame} with the following named columns
@@ -12,7 +12,7 @@
 #' } The true transition time between states is then interval censored between the times.
 #' @param tmat A transition matrix as created by \code{transMat}
 #' @param method Which method should be used for the EM algorithm. Choices are 
-#' \code{c("binomial", "poisson")}, with binomial the default.
+#' \code{c("multinomial", "poisson")}, with multinomial the default.
 #' @param exact Numeric vector indicating to which states transitions are observed at exact times.
 #' Must coincide with the column number in \code{tmat}.
 #' @param maxit Maximum number of iterations.
@@ -41,7 +41,7 @@
 #' 
 #' 
 
-EM_binomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, conv_crit, manual, 
+EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, conv_crit, manual, 
                         verbose, newmet, include_inf, checkMLE, checkMLE_tol, prob_tol, remove_bins,
                         init_int = init_int, ...){
   # Remove notes from CRAN check

@@ -91,7 +91,7 @@ This argument has no practical uses and only exists for demonstration purposes.}
 \item{...}{Not used yet.}
 
 \item{method}{Which method should be used for the EM algorithm. Choices are 
-\code{c("binomial", "poisson")}, with binomial the default.}
+\code{c("multinomial", "poisson")}, with multinomial the default.}
 }
 \description{
 For a general Markov chain multi-state model with interval censored 

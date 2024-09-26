@@ -12,7 +12,7 @@
 #' } The true transition time between states is then interval censored between the times.
 #' @param tmat A transition matrix as created by \code{transMat}
 #' @param method Which method should be used for the EM algorithm. Choices are 
-#' \code{c("binomial", "poisson")}, with binomial the default.
+#' \code{c("multinomial", "poisson")}, with multinomial the default.
 #' @param support_manual Used for specifying a manual support region for the transitions.
 #' A list of length the number of transitions in \code{tmat}, 
 #' each list element containing a data frame with 2 names columns L and R indicating the 
@@ -94,7 +94,7 @@
 
 
 
-npmsm <- function(gd, tmat, method = c("binomial", "poisson"), support_manual, 
+npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual, 
                   exact, maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
                   verbose = FALSE, manual = FALSE, 
                   newmet = FALSE, include_inf = FALSE, checkMLE = TRUE,
@@ -106,7 +106,7 @@ npmsm <- function(gd, tmat, method = c("binomial", "poisson"), support_manual,
 # Argument Checks ---------------------------------------------------------
 
   
-  method <- match.arg(method, choices = c("binomial", "poisson"))
+  method <- match.arg(method, choices = c("multinomial", "poisson"))
   conv_crit <- match.arg(conv_crit, choices = c("haz", "prob", "lik"))
   
   
@@ -185,8 +185,8 @@ npmsm <- function(gd, tmat, method = c("binomial", "poisson"), support_manual,
 
 # Call to EM algorithm ----------------------------------------------------
 
-  if( method == "binomial" ){
-    out <- EM_binomial( gd = gd, tmat = tmat, tmat2 = tmat2, support_manual = support_manual,
+  if( method == "multinomial" ){
+    out <- EM_multinomial( gd = gd, tmat = tmat, tmat2 = tmat2, support_manual = support_manual,
                         exact = exact, maxit = maxit, tol = tol, conv_crit = conv_crit, manual = manual, 
                         verbose = verbose, newmet = newmet, include_inf = include_inf, checkMLE = checkMLE,
                         checkMLE_tol = checkMLE_tol, prob_tol = prob_tol, remove_bins = remove_bins, init_int = init_int,

@@ -7,7 +7,7 @@
 npmsm(
   gd,
   tmat,
-  method = c("binomial", "poisson"),
+  method = c("multinomial", "poisson"),
   support_manual,
   exact,
   maxit = 100,
@@ -38,7 +38,7 @@ npmsm(
 \item{tmat}{A transition matrix as created by \code{transMat}}
 
 \item{method}{Which method should be used for the EM algorithm. Choices are 
-\code{c("binomial", "poisson")}, with binomial the default.}
+\code{c("multinomial", "poisson")}, with multinomial the default.}
 
 \item{support_manual}{Used for specifying a manual support region for the transitions.
 A list of length the number of transitions in \code{tmat}, 
@@ -50,8 +50,8 @@ Must coincide with the column number in \code{tmat}.}
 
 \item{maxit}{Maximum number of iterations.}
 
-\item{tol}{Tolerance of the procedure. An increase in an iteration in the 
-value of \code{conv_crit} of less than \code{tol} will make the procedure stop.}
+\item{tol}{Tolerance of the procedure. A change in the value of 
+\code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.}
 
 \item{conv_crit}{Convergence criterion. Stops procedure when the difference 
 in the chosen quantity between two consecutive iterations is smaller 

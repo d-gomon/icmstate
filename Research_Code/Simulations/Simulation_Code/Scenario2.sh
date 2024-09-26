@@ -18,18 +18,18 @@ sbatch --job-name="sc2n500obs6N500msm2" --export=scenario=2,n=500,n_obs=6,N=500,
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-short MSMsimulation.slurm
 
 
-## Binomial EM
+## multinomial EM
 
-sbatch --job-name="sc2n100obs6N1000bin" --export=scenario=2,n=100,n_obs=6,N=1000,method="binomial",RNG=1 --time=2:00:00 \
+sbatch --job-name="sc2n100obs6N1000bin" --export=scenario=2,n=100,n_obs=6,N=1000,method="multinomial",RNG=1 --time=2:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-short MSMsimulation.slurm
 
-sbatch --job-name="sc2n300obs6N1000bin" --export=scenario=2,n=300,n_obs=6,N=1000,method="binomial",RNG=1 --time=20:00:00 \
+sbatch --job-name="sc2n300obs6N1000bin" --export=scenario=2,n=300,n_obs=6,N=1000,method="multinomial",RNG=1 --time=20:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
 
-sbatch --job-name="sc2n500obs6N500bin" --export=scenario=2,n=500,n_obs=6,N=500,method="binomial",RNG=1 --time=23:00:00 \
+sbatch --job-name="sc2n500obs6N500bin" --export=scenario=2,n=500,n_obs=6,N=500,method="multinomial",RNG=1 --time=23:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
 
-sbatch --job-name="sc2n500obs6N500bin2" --export=scenario=2,n=500,n_obs=6,N=500,method="binomial",RNG=2 --time=23:00:00 \
+sbatch --job-name="sc2n500obs6N500bin2" --export=scenario=2,n=500,n_obs=6,N=500,method="multinomial",RNG=2 --time=23:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
 
 ## Poisson EM
