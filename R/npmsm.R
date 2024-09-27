@@ -10,7 +10,7 @@
 #'   \item{\code{state}:}{State at which the subject is observed at \code{time};}
 #'   \item{\code{time}:}{Time at which the subject is observed;}
 #' } The true transition time between states is then interval censored between the times.
-#' @param tmat A transition matrix as created by \code{transMat}
+#' @param tmat A transition matrix as created by \code{\link[mstate:transMat]{transMat}}
 #' @param method Which method should be used for the EM algorithm. Choices are 
 #' \code{c("multinomial", "poisson")}, with multinomial the default.
 #' @param support_manual Used for specifying a manual support region for the transitions.
@@ -98,7 +98,7 @@ npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual
                   exact, maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
                   verbose = FALSE, manual = FALSE, 
                   newmet = FALSE, include_inf = FALSE, checkMLE = TRUE,
-                  checkMLE_tol = 1e-10, prob_tol = tol,
+                  checkMLE_tol = 1e-4, prob_tol = tol,
                   remove_redundant = TRUE, remove_bins = FALSE,
                   estimateSupport = FALSE, init_int = c(0, 0), ...){
   

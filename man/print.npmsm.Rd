@@ -4,10 +4,10 @@
 \alias{print.npmsm}
 \title{Print a "npmsm" object}
 \usage{
-\method{print}{npmsm}(object, ...)
+\method{print}{npmsm}(x, ...)
 }
 \arguments{
-\item{object}{An object of class \code{"npmsm"}}
+\item{x}{An object of class \code{"npmsm"}}
 
 \item{...}{Additional arguments to print}
 }

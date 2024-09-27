@@ -17,7 +17,7 @@ prod_lambda_G_base(lambda, t_n, Q, A)
 \item{A}{Matrix (2 column) containing censoring intervals as rows}
 }
 \description{
-This function calculates Prod_{lambda} G as defined in 
-Frydman (1995), with t_n the failure times. Note that length(t_n) must be 
+This function calculates \eqn{\prod_{\lambda}}{prod(\lambda)} G as defined in 
+Frydman (1995), with \eqn{t_n}{t_n} the failure times. Note that length(t_n) must be 
 equal to length(lambda)
 }

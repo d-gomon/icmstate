@@ -2,7 +2,7 @@
 #' 
 #' @description A wrapper for \code{\link[mstate:msfit]{msfit}}
 #' 
-#' @param object An object of class \code{"npmsm"}
+#' @param x An object of class \code{"npmsm"}
 #' @param ... Additional arguments to \code{\link[mstate:msfit]{msfit}}
 #' 
 #' @return A plot will be produced in the plotting window
@@ -13,6 +13,6 @@
 
 
 
-plot.npmsm <- function(object, ...){
-  plot(object$A, ...)
+plot.npmsm <- function(x, ...){
+  plot(x$A, ...)
 }

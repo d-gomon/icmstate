@@ -237,8 +237,8 @@ Aintersectb <- function(A, b, A.left.open = FALSE){
 #' @title Calculate the product of intensities over interval decided by 
 #' failure times
 #' 
-#' @description This function calculates Prod_{lambda} G as defined in 
-#' Frydman (1995), with t_n the failure times. Note that length(t_n) must be 
+#' @description This function calculates \eqn{\prod_{\lambda}}{prod(\lambda)} G as defined in 
+#' Frydman (1995), with \eqn{t_n}{t_n} the failure times. Note that length(t_n) must be 
 #' equal to length(lambda)
 #'
 #' @param lambda Intensities of the 2->3 transition

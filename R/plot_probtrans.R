@@ -164,7 +164,7 @@ plot_probtrans <- function(npmsmlist, from = NULL, to = NULL, transitions = NULL
     } else if(inherits(dat[[1]], "msm")){
       ###################################MSM PART########################
       probtrans_orig <- suppressWarnings({
-        probtrans_msm(dat[[i]], times = times_interpol)
+        transprob(dat[[i]], times = times_interpol)
       }) 
       
       if(is.null(from)){ #If we did not specify a state from which we are interested in transitions

@@ -18,7 +18,7 @@ npmsm(
   newmet = FALSE,
   include_inf = FALSE,
   checkMLE = TRUE,
-  checkMLE_tol = 1e-10,
+  checkMLE_tol = 1e-04,
   prob_tol = tol,
   remove_redundant = TRUE,
   remove_bins = FALSE,
@@ -35,7 +35,7 @@ npmsm(
   \item{\code{time}:}{Time at which the subject is observed;}
 } The true transition time between states is then interval censored between the times.}
 
-\item{tmat}{A transition matrix as created by \code{transMat}}
+\item{tmat}{A transition matrix as created by \code{\link[mstate:transMat]{transMat}}}
 
 \item{method}{Which method should be used for the EM algorithm. Choices are 
 \code{c("multinomial", "poisson")}, with multinomial the default.}

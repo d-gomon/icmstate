@@ -6,15 +6,16 @@ output:
     number_sections: true
     citation_package: natbib
     highlight: tango
+    fig_caption: true
 vignette: >
   %\VignetteIndexEntry{Overview}
-  %\VignetteEngine{rmarkdown::pdf_document}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 bibliography: references.bib
 header-includes: 
   - \usepackage{tikz}
   - \usepackage{pgfplots}
-  - \pgfplotsset{compat=1.7}
+  - \pgfplotsset{compat=1.8}
   - \usepackage{caption}
   - \usepackage{amsmath}
   - \usepackage{mathtools}
@@ -33,13 +34,16 @@ header-includes:
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.path = 'figure-latex/', 
+  cache = FALSE
 )
 ```
 
 ```{r setup, echo=FALSE}
 library(icmstate)
 library(msm)
+library(latex2exp)
 set.seed(1)
 ```
 
@@ -86,7 +90,7 @@ Sometimes the available data is not well described by the simple survival settin
 
 ## Panel data {#panel-data}
 
-When the state of subjects is observed intermittently, we obtain so called *panel data*. Such data is best described by an interval-censored multi-state model, as the exact transition times between states are not known. Additionally, it can be unclear exactly which transitions have been made between two observation times, as multi-state models can be quite complex. 
+When the state of subjects is observed intermittently, we obtain so called *panel data*. Such data is best described by an interval-censored multi-state model, as the exact transition times between states are not known. Additionally, it can be unclear exactly which transitions have been made between two observation times, as different paths can be taken to arrive at the same state in complex multi-state models.
 
 It sometimes occurs that the entry time into a subset of the states is always observed at an exact time. For example, in the illness-death model (Figure \@ref(fig:IDM)) it is reasonable to assume that the time of entry into the death state will be observed exactly. We will therefore also consider panel data with a mix of interval- and right-censored data.
 
@@ -177,8 +181,10 @@ Although the two methods usually yield similar estimates, there are some pros an
 
 For most users, it should suffice to choose the appropriate method as follows:
 
-1. If subjects can be initially observed in all non-absorbing states and the cumulative intensities are of interest: Poisson EM.
+1. If not all subjects are observed at the beginning of the study (time $0$) and the subjects can initially be observed in all non-absorbing states and the cumulative intensities are of interest: Poisson EM.
 2. In all other cases, the computational advantage of the Multinomial EM algorithm will make it the more desirable choice.
+
+
 
 
 <!-- \begin{table}[!ht] -->
@@ -216,6 +222,8 @@ This ``standard'' survival setting can be represented by using the following *tr
 library(mstate)
 tmat <- transMat(x = list( c(2), c() ))
 ```
+
+For this, we follow the approach in the `mstate` package @Wreede2011 .
 
 This transition matrix tells us that there are 2 states, with a possible transition to state $2$ from state $1$ and no transitions out of state $2$ (absorbing).
 
@@ -269,22 +277,87 @@ Turnbull <- ic_np(cbind(L, R) ~ 0, data = icdata)
 ```
 
 
-Extract statistics to compare the two:
-```{r}
-Turnbull_result <- cbind(t(Turnbull$T_bull_Intervals), matrix(Turnbull$p_hat))
-colnames(Turnbull_result) <- c("L", "R", "phat")
-Turnbull_result
-```
-Unfortunately, the Turnbull estimator usually extracts $p_{12}^k = F(\tau_k) - F(\tau_{k-1})$ instead of the intensities. We can however compare the resulting survival functions of the two approaches:
-```{r}
-surv_turnbull <- sapply(1:nrow(Turnbull_result), function(i) 1 - sum(Turnbull_result[1:i, 3]))
-surv_npmsm <- probtrans(SimpleMult$A, predt = 0, direction = "forward")
+The Turnbull estimator usually extracts $p_{12}^k = F(\tau_k) - F(\tau_{k-1})$ instead of the intensities. Note that we cannot compare different models on their estimated intensities if the intensities are calculated over different intervals! We can however compare the resulting survival functions of the two approaches:
+```{r warning = FALSE}
+surv_turnbull <- sapply(1:length(Turnbull$p_hat), function(i) 1 - sum(Turnbull$p_hat[1:i]))
+surv_npmsm <- probtrans(SimpleMult$A, predt = 0, direction = "forward", variance = FALSE)
+plot(surv_npmsm, main = "Comparison of survival functions: black (npmsm), red (Turnbull)")
+lines(c(0, Turnbull$T_bull_Intervals[2,]), c(1, surv_turnbull), type = "s", col = "red",
+      lwd = 2, lty = 2)
 ```
 
-
+We can see that both methods recover the same survival function, as expected.
 
 
 ## Time homogeneous example
+
+Let us consider the illness-death model with time-homogeneous transition intensities. We assume that all transitions are interval-censored. This means that $\alpha_{gh}(t) = \lambda_{gh}$ for the possible transitions in the model: $1 \to 2, 2 \to 3$ and $1 \to 3$. We choose $\lambda_{gh}(t) = 0.1$ for each transition. We generate some data using the `msm` package:
+```{r}
+#Absorbing state 3
+qmatrix <- rbind(
+  c(-0.2, 0.1, 0.1),
+  c(0, -0.1, 0.1),
+  c(0, 0, 0)
+)
+#Create a transition matrix
+tmat_ID <- trans.illdeath()
+#Number of subjects in simulated data
+n <- 100
+#Create data frame for simulation:
+simdat_ID <- data.frame(time = c(replicate(n, c(0, seq(2, 12, by=2) + runif(6, 0, 2)))),
+                    subject = rep(1:n, each = 7))
+dat_ID <- simmulti.msm(data = simdat_ID, qmatrix = qmatrix, start = 1)[, 1:3]
+names(dat_ID)[1] <- "id"
+```
+
+Let us take a visual look at the data of the first $20$ subjects (Figure \@ref(fig:visID)):
+
+```{r visID, fig.cap="Visualisation of 20 subjects in an illness-death model"}
+visualise_msm(subset(dat_ID, id < 21))
+```
+
+As the data was simulated using time homogeneous intensities, we can also use the `msm` package to fit an appropriate model to the data:
+```{r}
+ID_msm <- msm(state ~ time, data = dat_ID, subject = id, qmatrix = qmatrix)
+ID_npmsm <- npmsm(gd = dat_ID, tmat = tmat_ID)
+```
+
+We plot the estimated cumulative intensities against each other (see Figure \@ref(fig:IDfits)):
+
+```{r IDfits, fig.cap = "Cumulative intensity estimates using the msm package and icmstate package. True cumulative intensities are straight lines with slope $0.1$ for each transition."}
+plot(ID_npmsm, main = "Cumulative intensity: icmstate (solid lines) vs msm (dashed lines)")
+cols <- c("black", "red", "green")
+for(i in 1:length(ID_msm$estimates)){
+  abline(a = 0, b = exp(ID_msm$estimates)[i], col = cols[i], lty = 2)
+}
+
+```
+
+In this simulated example, we know that the true cumulative intensities are $A_{gh}(t) = 0.1 t$, and both methods are not far off from the truth. We can check some diagnostics of the EM algorithm run by `icmstate` by simply printing the fitted model:
+```{r}
+ID_npmsm
+```
+
+By default, the EM algorithm will only perform $100$ iterations. This can be changed by the `maxit` argument. We find that the convergence criterion of a change in $\max_{g,h,k} \alpha_{gh}^k$ smaller than $0.0001$ has not been reached in the first $100$ iterations, therefore it would be advisable to re-run this model with more iterations. A check on whether the estimated intensities represent the NPMLE is also performed, up to a numerical tolerance given by `checkMLE_tol`. It is advisable to have the tolerance criterion and convergence criterion close to each other. If the tolerance criterion is much smaller than the convergence criterion, the numerical check will always return that the NPMLE has not been reached yet.
+
+We might also be interested in determining transition probabilities for the estimated models. For this, first need to use the `transprob()` function (based on `probtrans()` from the `mstate` package) and afterwards we can simply plot the result. For details, see `help(transprob.npmsm)`.
+```{r}
+plot(transprob(object = ID_npmsm, predt = 0, direction = "forward", variance = FALSE),
+     main = "Transition probabilities from npmsm() fit")
+```
+
+Similarly, we can plot the transition probabilities for the `msm` fit (see `help(transprob.msm)`).
+```{r}
+plot(transprob(ID_msm, predt = 0, times = seq(0, 14, 0.05)), 
+     main = "Transition probabilities from msm() fit")
+```
+
+
+
+
+
+
+
 
 
 

@@ -11,8 +11,6 @@
 #'   \item{\code{time}:}{Time at which the subject is observed;}
 #' } The true transition time between states is then interval censored between the times.
 #' @param tmat A transition matrix as created by \code{transMat}
-#' @param method Which method should be used for the EM algorithm. Choices are 
-#' \code{c("multinomial", "poisson")}, with multinomial the default.
 #' @param exact Numeric vector indicating to which states transitions are observed at exact times.
 #' Must coincide with the column number in \code{tmat}.
 #' @param maxit Maximum number of iterations.

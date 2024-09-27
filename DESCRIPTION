@@ -1,13 +1,16 @@
 Package: icmstate
 Type: Package
-Title: Non-parametric estimation of transition intensities in interval-censored multi-state models
-Version: 2024.08.28
-Date: 2023-06-28
-Author: Daniel Gomon
+Title: Non-Parametric Estimation of Transition Intensities in Interval-Censored Multi-State Models
+Version: 0.1.0
+Authors@R: c(
+  person("Daniel", "Gomon", email = "dgstatsoft@gmail.com", role = c("aut", "cre"),
+  comment = c(ORCID = "0000-0001-9011-3743")),
+  person("Hein", "Putter", , role = "aut",
+  comment = c(ORCID = "0000-0001-5395-1422")))
 Maintainer: Daniel Gomon <dgstatsoft@gmail.com>
 Description: Allows for the estimation of transition intensities in interval-censored
-    multi-state models using the approach of Gomon and Putter (Multinomial likelihood) or 
-    Gu et al. (Poisson likelihood).
+    multi-state models using the approach of Gomon and Putter (2024) (Multinomial likelihood) or 
+    Gu et al. (2023) (Poisson likelihood).
 License: GPL (>= 2)
 Imports: 
     Rcpp,
@@ -26,8 +29,9 @@ Suggests:
     survival,
     knitr,
     rmarkdown,
-    bookdown
+    bookdown,
+    latex2exp
 Config/testthat/edition: 3
 RoxygenNote: 7.3.2
 Encoding: UTF-8
-VignetteBuilder: knitr, rmarkdown
+VignetteBuilder: knitr

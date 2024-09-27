@@ -4,10 +4,10 @@
 \alias{plot.npmsm}
 \title{Plot a "npmsm" object}
 \usage{
-\method{plot}{npmsm}(object, ...)
+\method{plot}{npmsm}(x, ...)
 }
 \arguments{
-\item{object}{An object of class \code{"npmsm"}}
+\item{x}{An object of class \code{"npmsm"}}
 
 \item{...}{Additional arguments to \code{\link[mstate:msfit]{msfit}}}
 }
