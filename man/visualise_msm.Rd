@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualise_msm.R
 \name{visualise_msm}
 \alias{visualise_msm}
-\title{Visualise data}
+\title{Visualise multi-state data}
 \usage{
 visualise_msm(gd, npmsm, tmat, neat = TRUE, cutoff)
 }
@@ -24,6 +24,24 @@ removed in the plot. Default is TRUE}
 \item{cutoff}{cutoff value for numerically determining the support using
 \code{\link{support_npmsm}}}
 }
+\value{
+A plot will be produced in the plotting window.
+}
 \description{
-Visualise data
+Produce a plot with the y-axis representing subjects in the data and the 
+x-axis representing the time at which states have been observed.
+}
+\examples{
+#Write a function for evaluation times: observe at 0 and uniform inter-observation times.
+eval_times <- function(n_obs, stop_time){
+  cumsum( c( runif(1, 0, 0.5),  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
+}
+#Use built_in function to simulate illness-death data
+#from Weibull distributions for each transition
+sim_dat <- sim_id_weib(n = 50, n_obs = 6, stop_time = 15, eval_times = eval_times,
+                      start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
+
+#Visualise the data
+visualise_msm(sim_dat)                       
+
 }

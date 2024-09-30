@@ -37,8 +37,10 @@ EM_multinomial(
 
 \item{support_manual}{Used for specifying a manual support region for the transitions.
 A list of length the number of transitions in \code{tmat}, 
-each list element containing a data frame with 2 names columns L and R indicating the 
-left and right values of the support intervals}
+each list element containing a data frame with 2 named columns L and R indicating the 
+left and right values of the support intervals. When specified, all intensities 
+outside of these intervals will be set to zero for the corresponding transitions.
+Intensities set to zero cannot be changed by the EM algorithm.}
 
 \item{exact}{Numeric vector indicating to which states transitions are observed at exact times.
 Must coincide with the column number in \code{tmat}.}
@@ -51,12 +53,12 @@ Must coincide with the column number in \code{tmat}.}
 in the chosen quantity between two consecutive iterations is smaller 
 than the tolerance level \code{tol}. One of the following:
 \describe{
-\item{"haz"}{Stop when change in estimated intensities (hazards) \code{< tol}.}
-\item{"prob"}{Stop when change in estimated probabilities \code{< tol}.}
-\item{"lik"}{Stop when change in observed-data likelihood \code{< tol}.}
+\item{"haz"}{Stop when change in maximum estimated intensities (hazards) \code{ < tol}.}
+\item{"prob"}{Stop when change in estimated probabilities \code{ < tol}.}
+\item{"lik"}{Stop when change in observed-data likelihood \code{ < tol}.}
 } Default is "haz". The options "haz" and "lik" can be compared across different
 \code{method}s, but "prob" is dependent on the chosen \code{method}. Most 
-conservative (safest) is "prob", followed by "haz" and finally "lik".}
+conservative (requiring most iterations) is "prob", followed by "haz" and finally "lik".}
 
 \item{manual}{Manually specify starting transition intensities?}
 
@@ -78,15 +80,16 @@ to be zero.}
 \item{prob_tol}{If an estimated probability is smaller than \code{prob_tol}, 
 it will be set to zero during estimation. Default value is \code{tol}.}
 
-\item{remove_bins}{Should bins be removed during the algorithm if there is 
-0 estimated intensity in all of the transitions? Significantly improves 
-computation speed for large data sets. Note that 0 means the estimated intensities 
+\item{remove_bins}{Should a bin be removed during the algorithm if all
+estimated intensities are zero for a single bin? Can improve 
+computation speed for large data sets. Note that zero means the estimated intensities 
 are smaller than \code{prob_tol}. Default is FALSE.}
 
 \item{init_int}{A vector of length 2, with the first entry indicating what 
 percentage of mass should be distributed over (second entry) what percentage 
 of all first bins. Default is c(0, 0), in which case the argument is ignored.
-This argument has no practical uses and only exists for demonstration purposes.}
+This argument has no practical uses and only exists for demonstration purposes 
+in the related article.}
 
 \item{...}{Not used yet}
 }

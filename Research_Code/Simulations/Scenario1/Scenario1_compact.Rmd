@@ -237,7 +237,7 @@ create_summary_df_pt <- function(dat, eval_times, from = from){
       })
     } else{
       df[((i-1)*n_times +1):(i*n_times), 1:(n_states+1)] <- suppressWarnings({
-        as.matrix(probtrans_msm(dat[[i]], times = eval_times)[[from]])
+        as.matrix(transprob(dat[[i]], times = eval_times)[[from]])
       })
     }
     df[((i-1)*n_times +1):(i*n_times), n_states+2] <- rep(i, n_times)

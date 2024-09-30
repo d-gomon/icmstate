@@ -12,84 +12,169 @@
 #' } The true transition time between states is then interval censored between the times.
 #' @param tmat A transition matrix as created by \code{\link[mstate:transMat]{transMat}}
 #' @param method Which method should be used for the EM algorithm. Choices are 
-#' \code{c("multinomial", "poisson")}, with multinomial the default.
+#' \code{c("multinomial", "poisson")}, with multinomial the default. Multinomial 
+#' will use the EM algorithm described in Gomon and Putter (2024) and Poisson
+#' will use the EM algorithm described in Gu et al. (2023).
 #' @param support_manual Used for specifying a manual support region for the transitions.
 #' A list of length the number of transitions in \code{tmat}, 
-#' each list element containing a data frame with 2 names columns L and R indicating the 
-#' left and right values of the support intervals
+#' each list element containing a data frame with 2 named columns L and R indicating the 
+#' left and right values of the support intervals. When specified, all intensities 
+#' outside of these intervals will be set to zero for the corresponding transitions.
+#' Intensities set to zero cannot be changed by the EM algorithm.
 #' @param exact Numeric vector indicating to which states transitions are observed at exact times.
 #' Must coincide with the column number in \code{tmat}.
-#' @param maxit Maximum number of iterations.
-#' @param tol Tolerance of the procedure. A change in the value of 
+#' @param maxit Maximum number of iterations. Default = 100.
+#' @param tol Tolerance of the convergence procedure. A change in the value of 
 #' \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.
 #' @param conv_crit Convergence criterion. Stops procedure when the difference 
 #' in the chosen quantity between two consecutive iterations is smaller 
 #' than the tolerance level \code{tol}. One of the following:
 #' \describe{
-#' \item{"haz"}{Stop when change in estimated intensities (hazards) \code{< tol}.}
-#' \item{"prob"}{Stop when change in estimated probabilities \code{< tol}.}
-#' \item{"lik"}{Stop when change in observed-data likelihood \code{< tol}.}
+#' \item{"haz"}{Stop when change in maximum estimated intensities (hazards) \code{ < tol}.}
+#' \item{"prob"}{Stop when change in estimated probabilities \code{ < tol}.}
+#' \item{"lik"}{Stop when change in observed-data likelihood \code{ < tol}.}
 #' } Default is "haz". The options "haz" and "lik" can be compared across different
 #' \code{method}s, but "prob" is dependent on the chosen \code{method}. Most 
-#' conservative (safest) is "prob", followed by "haz" and finally "lik".
+#' conservative (requiring most iterations) is "prob", followed by "haz" and finally "lik".
 #' @param verbose Should iteration messages be printed? Default is FALSE
-#' @param manual Manually specify starting transition intensities?
+#' @param manual Manually specify starting transition intensities? If \code{TRUE},
+#' the transition intensity for each bin for each transition must be entered manually.
+#' DO NOT USE for large data sets, and in general it is not adviced to use this.
 #' @param newmet Should contributions after last observation time also be used 
 #' in the likelihood? Default is FALSE.
 #' @param include_inf Should an additional bin from the largest observed time to 
 #' infinity be included in the algorithm? Default is FALSE.
 #' @param checkMLE Should a check be performed whether the estimate has converged 
-#' towards a true Maximum Likelihood Estimate? Default is TRUE.
+#' towards a true Maximum Likelihood Estimate? This is done by comparing 
+#' the reduced gradient to the value of \code{checkMLE_tol}. Default is TRUE.
 #' @param checkMLE_tol Tolerance for checking whether the estimate has converged to MLE.
-#' Whenever an estimated transition intensity is smaller than the tolerance, it is assumed 
-#' to be zero.
+#' Whenever an estimated transition intensity is smaller than \code{prob_tol}, it is assumed 
+#' to be zero and its reduced gradient is not considered for determining whether 
+#' the NPMLE has been reached. Default = \code{1e-4}.
 #' @param prob_tol If an estimated probability is smaller than \code{prob_tol}, 
 #' it will be set to zero during estimation. Default value is \code{tol}.
 #' @param remove_redundant Should redundant observations be removed before running 
-#' the algorithm? Default is TRUE.
-#' @param remove_bins Should bins be removed during the algorithm if there is 
-#' 0 estimated intensity in all of the transitions? Significantly improves 
-#' computation speed for large data sets. Note that 0 means the estimated intensities 
+#' the algorithm? An observation is redundant when the same state has been observed 
+#' more than 3 times consecutively, or if it is a repeat observation of an 
+#' absorbing state. Default is TRUE.
+#' @param remove_bins Should a bin be removed during the algorithm if all
+#' estimated intensities are zero for a single bin? Can improve 
+#' computation speed for large data sets. Note that zero means the estimated intensities 
 #' are smaller than \code{prob_tol}. Default is FALSE.
 #' @param estimateSupport Should the support of the transitions be estimated using 
 #' the result of Hudgens (2005)? Currently produces incorrect support sets - 
-#' DO NOT USE.
+#' DO NOT USE. Default = \code{FALSE}
 #' @param init_int A vector of length 2, with the first entry indicating what 
 #' percentage of mass should be distributed over (second entry) what percentage 
 #' of all first bins. Default is c(0, 0), in which case the argument is ignored.
-#' This argument has no practical uses and only exists for demonstration purposes.
+#' This argument has no practical uses and only exists for demonstration purposes 
+#' in the related article.
 #' @param ... Further arguments to \code{\link{estimate_support_msm}}
+#' 
+#' 
+#' @return A data frame with the following entries:
+#' \describe{
+#'   \item{\code{A}: }{A list of class \code{\link[mstate:msfit]{msfit}} containing 
+#'   the cumulative intensities for each transition and the transition matrix used;}
+#'   \item{\code{Ainit}: }{Initial intensities, in an object of class \code{\link[mstate:msfit]{msfit}};}
+#'   \item{\code{gd}: }{Data used for the estimation procedure;}
+#'   \item{\code{ll}: }{Log-likelihood value of the procedure at the last iteration;}
+#'   \item{\code{delta}: }{Change in log-likelihood value at the last iteration;}
+#'   \item{\code{it}: }{Number of iterations of the procedure;}
+#'   \item{\code{taus}: }{Unique time points of the data, the cumulative intensity
+#'   only makes jumps at these time points.;}
+#'   \item{\code{tmat}: }{The transition matrix used, see \code{\link[mstate:transMat]{transMat}};}
+#'   \item{\code{tmat2}: }{A summary of the transitions in the model, see \code{\link[mstate:to.trans2]{to.trans2}};}
+#'   \item{\code{ll_history}: }{The log-likelihood value at every iteration of the procedure;}
+#'   \item{\code{KKT_violated}: }{How often were KKT conditions violated during
+#'   maximisation of the likelihood? In other words, how often did we hit the optimization 
+#'   boundary during the procedure?;}
+#'   \item{\code{min_time}: }{The smallest time of an observation in the used data. 
+#'   Note that the smallest time in the data is used as zero reference;}
+#'   \item{\code{reduced_gradient}: }{The reduced gradient at the last iteration.
+#'   Rows indicate the transitions and columns the unique observation times;}
+#'   \item{\code{isMLE}: }{Has the procedure converged to the NPMLE? Checked 
+#'   using \code{checkMLE_tol};}
+#'   \item{\code{langrangemultiplier}: }{The lagrange multipliers at the last iteration;}
+#'   \item{\code{aghmat}: }{A matrix representation of the transition intensities in \code{A}.
+#'   Rows represent transitions and columns unique observation times;}
+#'   \item{\code{Ygk}: }{The summed at-risk indicator for all subjects in the data at the last iteration.
+#'   Rows represent transitions and columns unique observation times;}
+#'   \item{\code{Dmk}: }{The summed probability of making a transition for all subjects at the last iteration.
+#'   Rows represent transitions and columns unique observation times;}
+#'   \item{\code{method}: }{Method used for the optimization procedure;}
+#'   \item{\code{maxit}: }{Maximum number of allowed iterations;}
+#'   \item{\code{tol}: }{Tolerance of the convergence procedure;}
+#'   \item{\code{conv_crit}: }{Convergence criterion of the procedure;}
+#'   \item{\code{checkMLE}: }{Was the reduced gradient checked at the last iteration to determine convergence?;}
+#'   \item{\code{checkMLE_tol}: }{The tolerance of the checkMLE procedure;}
+#'   \item{\code{prob_tol}: }{Tolerance for probabilities to be set to zero;}
+#'   \item{\code{remove_redundant}: }{Were redundant observations removed before performing the procedure?;}
+#' }
+#' 
+#' 
+#' 
+#' @details
+#' Denote the unique observation times in the data as \eqn{0 = \tau_0, \tau_1, \ldots, \tau_K}{0 = tau_0, tau_1, ..., tau_K}
+#' Let \eqn{g, h \in H}{g, h in H} denote the possible states in the model and \eqn{X(t)}{X(t)} the state of the process at time t.
+#' 
+#' Then this function can be used to estimate the transition intensities 
+#' \eqn{\alpha_{gh}^k = \alpha_{gh}(\tau_k)}{alpha_(gh)^k = alpha_(gh)(tau_k)}. 
+#' 
+#' Having obtained these estimated, it is possible to recover the transition probabilities 
+#' \eqn{\mathbb{P}(X(t) = h | X(s) = g)}{P(X(t) = h | X(s) = g)} for \eqn{t > s}{t > s} using 
+#' the \code{\link{transprob}} functions.
+#' 
 #' 
 #' @importFrom mstate to.trans2 msfit probtrans
 #' @importFrom igraph is_dag
 #' @import checkmate
 #' @export
 #' 
+#' @seealso \code{\link{transprob}} for calculating transition probabilities,
+#'  \code{\link{plot.npmsm}} for plotting the cumulative intensities, 
+#'  \code{\link{print.npmsm}} for printing some output summaries,
+#'  \code{\link{visualise_msm}} for visualising data.
 #' 
-#' @references Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
+#' 
+#' @references   
+#' D. Gomon and H. Putter, Non-parametric estimation of transition intensities 
+#' in interval censored Markov multi-state models without loops,
+#' arXiv, 2024, \doi{10.48550/arXiv.2409.07176}
+#' 
+#' Y. Gu, D. Zeng, G. Heiss, and D. Y. Lin, 
+#' Maximum likelihood estimation for semiparametric regression models with 
+#' interval-censored multistate data, Biometrika, Nov. 2023, \doi{10.1093/biomet/asad073}
+#' 
+#' Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
 #' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #' 
 #' 
 #' @examples 
-#' #Create transition matrix using mstate functionality
+#' #Create transition matrix using mstate functionality: illness-death
 #' if(require(mstate)){
 #'   tmat <- mstate::trans.illdeath()
 #' }
 #' 
-#' #Write a function for evaluation times
+#' #Write a function for evaluation times: observe at 0 and uniform inter-observation times.
 #' eval_times <- function(n_obs, stop_time){
 #'   cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
 #' }
 #' 
-#' #Use built_in function to simulate from Weibull distributions for each transition
+#' #Use built_in function to simulate illness-death data
+#' #from Weibull distributions for each transition
 #' sim_dat <- sim_id_weib(n = 50, n_obs = 6, stop_time = 15, eval_times = eval_times,
 #' start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
 #' 
 #' tmat <- mstate::trans.illdeath()
+#' 
+#' #Fit the model using method = "multinomial"
 #' mod_fit <- npmsm(gd = sim_dat, tmat = tmat, tol = 1e-2)
-#' plot(mod_fit$A)
+#' 
+#' #Plot the cumulative intensities for each transition
+#' plot(mod_fit)
 #' 
 
 
