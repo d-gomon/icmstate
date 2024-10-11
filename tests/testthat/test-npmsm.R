@@ -141,6 +141,34 @@ test_that("Frydman (1995) vs MSM",{
 
 
 
+test_that("Multinomial vs Poisson", {
+  set.seed(1)
+  tmat <- mstate::trans.illdeath()
+  #Function to generate evaluation times: at 0 and uniform inter-observation
+  eval_times <- function(n_obs, stop_time){
+    cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
+  }
+  
+  #Simulate illness-death model data with Weibull transitions
+  sim_dat <- sim_id_weib(n = 20, n_obs = 6, stop_time = 15, eval_times = eval_times,
+                         start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
+  
+  mod_mult <- npmsm(gd = sim_dat, tmat = tmat, tol = 1e-2)
+  mod_pois <- npmsm(gd = sim_dat, tmat = tmat, method = "poisson", tol = 1e-2)
+  
+  #The two models should not differ too much on the transition probabilities of the first and 
+  #second transition
+  mult_pt <- transprob(mod_mult, predt = 0)
+  pois_pt <- transprob(mod_pois, predt = 0)
+  
+  #Check closeness of 1->1, 1->2 and 1->3 transitions
+  expect_true(all(mult_pt[[1]] - pois_pt[[1]] < 0.2))
+  #Check closeness of 2->2 transition
+  expect_true(all(mult_pt[[2]][, 1:3] - pois_pt[[2]][, 1:3] < 0.2))
+})
+
+
+
 test_that("profvis", {
   #Code that should not run for testing.
   skip_if(TRUE)

@@ -73,6 +73,7 @@ visualise_msm <- function(gd, npmsm, tmat, neat = TRUE, cutoff){
     }
   }
   
+  
   #Order gd according to ID and then time
   gd <- gd[order(gd[, "id"], gd[, "time"]),]
   
@@ -129,7 +130,9 @@ visualise_msm <- function(gd, npmsm, tmat, neat = TRUE, cutoff){
       plot_framei$state1 <- support[[i]]$transition[1]
       plot_framei$state2 <- support[[i]]$transition[2]
       plot_framei$color <- "dummy"
-      plot_framei <- plot_framei[, c("ID", "t1", "t2", "state1", "state2", "color")]
+      plot_framei$mintime <- 0
+      plot_framei$minstate <- "|"
+      plot_framei <- plot_framei[, c("ID", "t1", "t2", "state1", "state2", "mintime", "minstate", "color")]
       plot_frame <- rbind(plot_frame, plot_framei)
     }
     plot_frame$color <- as.factor(row.match(plot_frame[, c("state1", "state2")], unique(plot_frame[, c("state1", "state2")])))

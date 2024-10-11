@@ -214,17 +214,17 @@ EM_poisson <- function(gd, tmat, tmat2, inits, beta_params, support_manual, exac
       time_diffs <- c(taus[1], diff(taus))
       for(m in 1:M){
         #For each transition, calculate cumulative hazard values
-        cumhaz[(m-1)*K + 1:K] <- crudeinits[tmat2[m, c("from")], tmat2[m, c("to")]] * time_diffs
+        cumhaz[(m-1)*K + 1:K] <- cumsum(pmin(crudeinits[tmat2[m, c("from")], tmat2[m, c("to")]] * time_diffs, 0.99))
       }
       A <- list(Haz = data.frame(time=rep(taus, M), Haz=cumhaz,
                                  trans=rep(1:M, rep(K,M))),
                 trans = tmat)
     } else if(inits == "unif"){
-      A <- list(Haz = data.frame(time=rep(taus, M), Haz = runif(K*M, 0, 1),
+      A <- list(Haz = data.frame(time=rep(taus, M), Haz = c(replicate(M, cumsum(runif(K, 0, 1)))),
                                  trans = rep(1:M, rep(K, M))),
                 trans = tmat)
     } else if(inits == "beta"){
-      A <- list(Haz = data.frame(time = rep(taus, M), Haz = rbeta(K*M, shape1 = beta_params[1], shape2 = beta_params[2]),
+      A <- list(Haz = data.frame(time = rep(taus, M), Haz = c(replicate(M, cumsum(rbeta(K, shape1 = beta_params[1], shape2 = beta_params[2])))),
                                  trans = rep(1:M, rep(K, M))),
                 trans = tmat)
     }

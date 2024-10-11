@@ -1,4 +1,4 @@
-test_that("visualise_msm", {
+test_that("plot_probtrans", {
   tmat <- mstate::transMat(x = list( c(2, 3), c(3), c() ))
   set.seed(1)
   #Absorbing states 4 and 6
@@ -35,8 +35,9 @@ test_that("visualise_msm", {
   tmat_eid <- mstate::transMat(x = list( c(2, 3), c(4), c(), c() ))
   
   out_msm <- npmsm(gd, tmat, maxit = 300, tol = 1e-8)
+  out_msm_pois <- npmsm(gd, tmat, maxit = 300, tol = 1e-8, method = "poisson")
   
   
-  expect_no_error(visualise_msm(gd, out_msm, tmat))
+  expect_no_error(plot_probtrans(list(out_msm, out_msm_pois), interpolate = FALSE))
   
 })
