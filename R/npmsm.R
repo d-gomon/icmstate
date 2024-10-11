@@ -2,7 +2,7 @@
 #' 
 #' @description For a general Markov chain multi-state model with interval censored 
 #' transitions calculate the NPMLE of the transition intensities. The estimates 
-#' are returned as an \code{\link[mstate:msfit]{'msfit'}} object.
+#' are returned as an \code{\link[mstate:msfit]{msfit}} object.
 #' 
 #' 
 #' @param gd A \code{data.frame} with the following named columns
@@ -148,7 +148,7 @@
 #'  \code{\link{plot.npmsm}} for plotting the cumulative intensities, 
 #'  \code{\link{print.npmsm}} for printing some output summaries,
 #'  \code{\link{visualise_msm}} for visualising data,
-#'  \code{\link[mstate:msfit]{'msfit'}} for details on the output object.
+#'  \code{\link[mstate:msfit]{msfit}} for details on the output object.
 #' 
 #' 
 #' @references   
