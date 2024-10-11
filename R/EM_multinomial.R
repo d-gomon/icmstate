@@ -577,8 +577,6 @@ EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, 
       #Also calculate Y_g^k resulting in a vector of length K
       Y_g <- apply(Y[, , g], 2, sum)
       KKT_check <- any(sum_d > Y_g)
-      Ylol <<- Y
-      dlol <<- d
       if(is.na(KKT_check)){
         stop("An observed transition has become impossible with the current estimates. 
              This is likely due to a probability being set to 0. Try lowering 'prob_tol' to resolve the issue.")
