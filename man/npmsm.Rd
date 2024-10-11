@@ -8,6 +8,8 @@ npmsm(
   gd,
   tmat,
   method = c("multinomial", "poisson"),
+  inits = c("equalprob", "homogeneous", "unif", "beta"),
+  beta_params,
   support_manual,
   exact,
   maxit = 100,
@@ -19,7 +21,7 @@ npmsm(
   include_inf = FALSE,
   checkMLE = TRUE,
   checkMLE_tol = 1e-04,
-  prob_tol = tol,
+  prob_tol = tol/10,
   remove_redundant = TRUE,
   remove_bins = FALSE,
   estimateSupport = FALSE,
@@ -42,12 +44,26 @@ npmsm(
 will use the EM algorithm described in Gomon and Putter (2024) and Poisson
 will use the EM algorithm described in Gu et al. (2023).}
 
+\item{inits}{Which distribution should be used to generate the initial estimates 
+of the intensities in the EM algorithm. One of c("equalprob", "unif", "beta"), 
+with "equalprob" assigning 1/K to each intensity, with K the number of distinct 
+observation times (\code{length(unique(gd[, "time"]))}). For "unif", each 
+intensity is sampled from the Unif[0,1] 
+distribution and for "beta" each intensity is sampled from the Beta(a, b) distribution. 
+If "beta" is chosen, the argument \code{beta_params} must be specified as a 
+vector of length 2 containing the parameters of the beta distribution.
+Default = "equalprob".}
+
+\item{beta_params}{A vector of length 2 specifying the beta distribution parameters 
+for initial distribution generation. First entry will be used as \code{shape1}
+and second entry as \code{shape2}. See \code{help(rbeta)}. Only used if \code{inits = "beta"}.}
+
 \item{support_manual}{Used for specifying a manual support region for the transitions.
 A list of length the number of transitions in \code{tmat}, 
 each list element containing a data frame with 2 named columns L and R indicating the 
 left and right values of the support intervals. When specified, all intensities 
 outside of these intervals will be set to zero for the corresponding transitions.
-Intensities set to zero cannot be changed by the EM algorithm.}
+Intensities set to zero cannot be changed by the EM algorithm. Will use inits = "equalprob".}
 
 \item{exact}{Numeric vector indicating to which states transitions are observed at exact times.
 Must coincide with the column number in \code{tmat}.}
@@ -90,7 +106,7 @@ to be zero and its reduced gradient is not considered for determining whether
 the NPMLE has been reached. Default = \code{1e-4}.}
 
 \item{prob_tol}{If an estimated probability is smaller than \code{prob_tol}, 
-it will be set to zero during estimation. Default value is \code{tol}.}
+it will be set to zero during estimation. Default value is \code{tol/10}.}
 
 \item{remove_redundant}{Should redundant observations be removed before running 
 the algorithm? An observation is redundant when the same state has been observed 
@@ -157,7 +173,8 @@ A data frame with the following entries:
 }
 \description{
 For a general Markov chain multi-state model with interval censored 
-transitions calculate the NPMLE.
+transitions calculate the NPMLE of the transition intensities. The estimates 
+are returned as an \code{\link[mstate:msfit]{'msfit'}} object.
 }
 \details{
 Denote the unique observation times in the data as \eqn{0 = \tau_0, \tau_1, \ldots, \tau_K}{0 = tau_0, tau_1, ..., tau_K}
@@ -206,12 +223,13 @@ interval-censored multistate data, Biometrika, Nov. 2023, \doi{10.1093/biomet/as
 
 Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
  \doi{10.1111/j.1467-9868.2005.00516.x}
 }
 \seealso{
 \code{\link{transprob}} for calculating transition probabilities,
  \code{\link{plot.npmsm}} for plotting the cumulative intensities, 
  \code{\link{print.npmsm}} for printing some output summaries,
- \code{\link{visualise_msm}} for visualising data.
+ \code{\link{visualise_msm}} for visualising data,
+ \code{\link[mstate:msfit]{'msfit'}} for details on the output object.
 }

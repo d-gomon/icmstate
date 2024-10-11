@@ -34,7 +34,8 @@
 #' #Use built_in function to simulate illness-death data
 #' #from Weibull distributions for each transition
 #' sim_dat <- sim_id_weib(n = 50, n_obs = 6, stop_time = 15, eval_times = eval_times,
-#'                       start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
+#'                       start_state = "stable", shape = c(0.5, 0.5, 2), 
+#'                       scale = c(5, 10, 10/gamma(1.5)))
 #'
 #' #Visualise the data
 #' visualise_msm(sim_dat)                       

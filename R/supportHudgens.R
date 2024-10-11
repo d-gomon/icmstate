@@ -31,7 +31,7 @@
 #' 
 #' @references Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #' 
 #' @import igraph
@@ -155,7 +155,7 @@ supportHudgens <- function(intervals, reduction = TRUE, existence = FALSE){
 #' 
 #' @references Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #' 
 #' @import igraph

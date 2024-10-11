@@ -8,6 +8,8 @@ EM_multinomial(
   gd,
   tmat,
   tmat2,
+  inits,
+  beta_params,
   support_manual,
   exact,
   maxit,
@@ -35,12 +37,26 @@ EM_multinomial(
 
 \item{tmat}{A transition matrix as created by \code{transMat}}
 
+\item{inits}{Which distribution should be used to generate the initial estimates 
+of the intensities in the EM algorithm. One of c("equalprob", "unif", "beta"), 
+with "equalprob" assigning 1/K to each intensity, with K the number of distinct 
+observation times (\code{length(unique(gd[, "time"]))}). For "unif", each 
+intensity is sampled from the Unif[0,1] 
+distribution and for "beta" each intensity is sampled from the Beta(a, b) distribution. 
+If "beta" is chosen, the argument \code{beta_params} must be specified as a 
+vector of length 2 containing the parameters of the beta distribution.
+Default = "equalprob".}
+
+\item{beta_params}{A vector of length 2 specifying the beta distribution parameters 
+for initial distribution generation. First entry will be used as \code{shape1}
+and second entry as \code{shape2}. See \code{help(rbeta)}. Only used if \code{inits = "beta"}.}
+
 \item{support_manual}{Used for specifying a manual support region for the transitions.
 A list of length the number of transitions in \code{tmat}, 
 each list element containing a data frame with 2 named columns L and R indicating the 
 left and right values of the support intervals. When specified, all intensities 
 outside of these intervals will be set to zero for the corresponding transitions.
-Intensities set to zero cannot be changed by the EM algorithm.}
+Intensities set to zero cannot be changed by the EM algorithm. Will use inits = "equalprob".}
 
 \item{exact}{Numeric vector indicating to which states transitions are observed at exact times.
 Must coincide with the column number in \code{tmat}.}
@@ -78,7 +94,7 @@ Whenever an estimated transition intensity is smaller than the tolerance, it is 
 to be zero.}
 
 \item{prob_tol}{If an estimated probability is smaller than \code{prob_tol}, 
-it will be set to zero during estimation. Default value is \code{tol}.}
+it will be set to zero during estimation. Default value is \code{tol/10}.}
 
 \item{remove_bins}{Should a bin be removed during the algorithm if all
 estimated intensities are zero for a single bin? Can improve 
@@ -100,7 +116,7 @@ transitions calculate the NPMLE using an EM algorithm with multinomial approach
 \references{
 Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
  \doi{10.1111/j.1467-9868.2005.00516.x}
 }
 \keyword{internal}

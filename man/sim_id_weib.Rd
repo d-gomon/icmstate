@@ -23,7 +23,7 @@ sim_id_weib(
 \item{stop_time}{Largest time at which the model is considered.}
 
 \item{eval_times}{A function which returns the evaluation times for a subject.
-Must have as arguments at least \code{n_obs} and \code{stop_times}.}
+Must have as arguments at least \code{n_obs} and \code{stop_time}.}
 
 \item{start_state}{In which states can subjects start? Either everyone starts 
 in state 1 ("stable") or equal probability to start in state 1 or 2 ("equalprob").}
@@ -43,16 +43,21 @@ An illness-death model has 3 transitions:
 \item{\code{2}:}{State 1 (Healthy) to State 3 (Death);}
 \item{\code{3}:}{State 2 (Illness) to State 3 (Death);}
 }
+Using this function, it is possible to simulate data from an illness-death 
+model with Weibull transition intensities. Requires the use of an external 
+(self-written) function to generate observation times.
 }
 \details{
 Taking \code{shape = 1} we get an exponential distribution with rate
 \code{1/scale}
 }
 \examples{
+#Function to generate evaluation times: at 0 and uniform inter-observation
 eval_times <- function(n_obs, stop_time){
   cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
 }
 
+#Simulate illness-death model data with Weibull transitions
 sim_dat <- sim_id_weib(n = 20, n_obs = 6, stop_time = 15, eval_times = eval_times,
 start_state = "stable", shape = c(0.5, 0.5, 2), scale = c(5, 10, 10/gamma(1.5)))
 

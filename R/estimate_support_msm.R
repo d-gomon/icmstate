@@ -20,13 +20,13 @@
 #' 
 #' @references Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #'
 #' @references M. G. Hudgens, G. A. Satten, and I. M. Longini, 
 #' Nonparametric Maximum Likelihood Estimation for Competing Risks Survival Data
 #'  Subject to Interval Censoring and Truncation, Biometrics, vol. 57, no. 1, 
-#'  Pages 74–80, March 2001, \doi{10.1111/j.0006-341x.2001.00074.x}
+#'  Pages 74-80, March 2001, \doi{10.1111/j.0006-341x.2001.00074.x}
 #' 
 #' @import igraph
 #' @importFrom mstate to.trans2

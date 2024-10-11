@@ -35,7 +35,7 @@ the NPMLE in the following form:
 }
 \references{
 Frydman, H. (1995). Nonparametric Estimation of a Markov 
-`Illness-Death’ Process from Interval- Censored Observations, with 
-Application to Diabetes Survival Data. Biometrika, 82(4), 773–789. 
+'Illness-Death' Process from Interval- Censored Observations, with 
+Application to Diabetes Survival Data. Biometrika, 82(4), 773-789. 
 \doi{10.2307/2337344}
 }

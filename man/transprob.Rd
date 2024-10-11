@@ -33,7 +33,7 @@ A \code{probtrans} object containing the estimated transition probabilities.
 \description{
 For \code{'msm'} objects: determine transition probabilities
 (as in \code{\link[mstate:probtrans]{probtrans}})  from an 
-\code{\link[msm:msm]{msm}} object.
+\code{\link[msm:msm]{msm}} object. Currently only direction = "forward" is supported.
 
 For \code{'npmsm'} objects: Determine transition probabilities for an \code{'npmsm'} object 
 using the \code{\link[mstate:probtrans]{probtrans}} function.

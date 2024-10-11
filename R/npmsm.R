@@ -1,7 +1,8 @@
 #' NPMLE for general multi-state model with interval censored transitions 
 #' 
 #' @description For a general Markov chain multi-state model with interval censored 
-#' transitions calculate the NPMLE. 
+#' transitions calculate the NPMLE of the transition intensities. The estimates 
+#' are returned as an \code{\link[mstate:msfit]{'msfit'}} object.
 #' 
 #' 
 #' @param gd A \code{data.frame} with the following named columns
@@ -15,12 +16,24 @@
 #' \code{c("multinomial", "poisson")}, with multinomial the default. Multinomial 
 #' will use the EM algorithm described in Gomon and Putter (2024) and Poisson
 #' will use the EM algorithm described in Gu et al. (2023).
+#' @param inits Which distribution should be used to generate the initial estimates 
+#' of the intensities in the EM algorithm. One of c("equalprob", "unif", "beta"), 
+#' with "equalprob" assigning 1/K to each intensity, with K the number of distinct 
+#' observation times (\code{length(unique(gd[, "time"]))}). For "unif", each 
+#' intensity is sampled from the Unif[0,1] 
+#' distribution and for "beta" each intensity is sampled from the Beta(a, b) distribution. 
+#' If "beta" is chosen, the argument \code{beta_params} must be specified as a 
+#' vector of length 2 containing the parameters of the beta distribution.
+#' Default = "equalprob".
+#' @param beta_params A vector of length 2 specifying the beta distribution parameters 
+#' for initial distribution generation. First entry will be used as \code{shape1}
+#' and second entry as \code{shape2}. See \code{help(rbeta)}. Only used if \code{inits = "beta"}. 
 #' @param support_manual Used for specifying a manual support region for the transitions.
 #' A list of length the number of transitions in \code{tmat}, 
 #' each list element containing a data frame with 2 named columns L and R indicating the 
 #' left and right values of the support intervals. When specified, all intensities 
 #' outside of these intervals will be set to zero for the corresponding transitions.
-#' Intensities set to zero cannot be changed by the EM algorithm.
+#' Intensities set to zero cannot be changed by the EM algorithm. Will use inits = "equalprob".
 #' @param exact Numeric vector indicating to which states transitions are observed at exact times.
 #' Must coincide with the column number in \code{tmat}.
 #' @param maxit Maximum number of iterations. Default = 100.
@@ -52,7 +65,7 @@
 #' to be zero and its reduced gradient is not considered for determining whether 
 #' the NPMLE has been reached. Default = \code{1e-4}.
 #' @param prob_tol If an estimated probability is smaller than \code{prob_tol}, 
-#' it will be set to zero during estimation. Default value is \code{tol}.
+#' it will be set to zero during estimation. Default value is \code{tol/10}.
 #' @param remove_redundant Should redundant observations be removed before running 
 #' the algorithm? An observation is redundant when the same state has been observed 
 #' more than 3 times consecutively, or if it is a repeat observation of an 
@@ -134,7 +147,8 @@
 #' @seealso \code{\link{transprob}} for calculating transition probabilities,
 #'  \code{\link{plot.npmsm}} for plotting the cumulative intensities, 
 #'  \code{\link{print.npmsm}} for printing some output summaries,
-#'  \code{\link{visualise_msm}} for visualising data.
+#'  \code{\link{visualise_msm}} for visualising data,
+#'  \code{\link[mstate:msfit]{'msfit'}} for details on the output object.
 #' 
 #' 
 #' @references   
@@ -148,7 +162,7 @@
 #' 
 #' Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #' 
 #' 
@@ -179,11 +193,12 @@
 
 
 
-npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual, 
+npmsm <- function(gd, tmat, method = c("multinomial", "poisson"),
+                  inits = c("equalprob", "homogeneous", "unif", "beta"), beta_params, support_manual, 
                   exact, maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
                   verbose = FALSE, manual = FALSE, 
                   newmet = FALSE, include_inf = FALSE, checkMLE = TRUE,
-                  checkMLE_tol = 1e-4, prob_tol = tol,
+                  checkMLE_tol = 1e-4, prob_tol = tol/10,
                   remove_redundant = TRUE, remove_bins = FALSE,
                   estimateSupport = FALSE, init_int = c(0, 0), ...){
   
@@ -193,6 +208,7 @@ npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual
   
   method <- match.arg(method, choices = c("multinomial", "poisson"))
   conv_crit <- match.arg(conv_crit, choices = c("haz", "prob", "lik"))
+  inits <- match.arg(inits, choices = c("equalprob", "homogeneous", "unif", "beta"))
   
   
   arg_checks <- makeAssertCollection()
@@ -209,6 +225,9 @@ npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual
   }
   if(!missing(support_manual)){
     assertList(support_manual, types = c("matrix", "list"), len = nrow(tmat2), add = arg_checks)
+  }
+  if(inits == "beta"){
+    assertNumeric(beta_params, lower = 0, upper = Inf, any.missing = FALSE, len = 2, add = arg_checks)
   }
   assertIntegerish(maxit, lower = 0, add = arg_checks)
   assertNumeric(tol, add = arg_checks)
@@ -271,13 +290,13 @@ npmsm <- function(gd, tmat, method = c("multinomial", "poisson"), support_manual
 # Call to EM algorithm ----------------------------------------------------
 
   if( method == "multinomial" ){
-    out <- EM_multinomial( gd = gd, tmat = tmat, tmat2 = tmat2, support_manual = support_manual,
+    out <- EM_multinomial( gd = gd, tmat = tmat, tmat2 = tmat2, inits = inits, beta_params = beta_params, support_manual = support_manual,
                         exact = exact, maxit = maxit, tol = tol, conv_crit = conv_crit, manual = manual, 
                         verbose = verbose, newmet = newmet, include_inf = include_inf, checkMLE = checkMLE,
                         checkMLE_tol = checkMLE_tol, prob_tol = prob_tol, remove_bins = remove_bins, init_int = init_int,
                         ... )  
   } else if( method == "poisson" ){
-    out <- EM_poisson( gd = gd, tmat = tmat, tmat2 = tmat2, support_manual = support_manual,
+    out <- EM_poisson( gd = gd, tmat = tmat, tmat2 = tmat2, inits = inits, beta_params = beta_params, support_manual = support_manual,
                        exact = exact, maxit = maxit, tol = tol, conv_crit = conv_crit, manual = manual, 
                        verbose = verbose, newmet = newmet, include_inf = include_inf, checkMLE = checkMLE,
                        checkMLE_tol = checkMLE_tol, prob_tol = prob_tol, remove_bins = remove_bins, init_int = init_int,

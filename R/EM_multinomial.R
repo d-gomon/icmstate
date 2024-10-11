@@ -30,16 +30,18 @@
 #' @inheritParams npmsm
 #' 
 #' @importFrom mstate to.trans2 msfit probtrans
+#' @importFrom msm crudeinits.msm
+#' @importFrom stats runif rbeta
 #' @keywords internal
 #' 
 #' @references Michael G. Hudgens, On Nonparametric Maximum Likelihood Estimation with 
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
-#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573–587,
+#' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
 #' 
 #' 
 
-EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, conv_crit, manual, 
+EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, exact, maxit, tol, conv_crit, manual, 
                         verbose, newmet, include_inf, checkMLE, checkMLE_tol, prob_tol, remove_bins,
                         init_int = init_int, ...){
   # Remove notes from CRAN check
@@ -61,6 +63,7 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
   final_step <- FALSE #We are not in our final iteration yet
   ll_storage <- c()
   KKT_violated <- 0
+  
   
   
 
@@ -176,14 +179,41 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
                                trans=rep(1:M, rep(K,M))),
               trans = tmat)
     attr(A, "class") <- "msfit"
-  } else{
-    #Create list with initial hazard estimates and corresponding transition numbering
-    A <- list(Haz = data.frame(time=rep(taus, M), Haz=rep((1:K)/K,M),
-                               trans=rep(1:M, rep(K,M))),
-              trans = tmat)
+  } else{ 
+    #Randomly generate initial estimates from distribution given in inits.
+    
+    if(inits == "equalprob"){
+      #Create list with initial hazard estimates and corresponding transition numbering
+      A <- list(Haz = data.frame(time=rep(taus, M), Haz=rep((1:K)/K,M),
+                                 trans=rep(1:M, rep(K,M))),
+                trans = tmat)
+    } else if(inits == "homogeneous"){
+      crudeinits <- msm::crudeinits.msm(state ~ time, subject = id, qmatrix = qmat_from_tmat(tmat),
+                          data = gd)
+      #Estimates will now be time diff * estimate A(t) = \lambda * t
+      cumhaz <- numeric(length = K * M)
+      time_diffs <- c(taus[1], diff(taus))
+      for(m in 1:M){
+        #For each transition, calculate cumulative hazard values
+        cumhaz[(m-1)*K + 1:K] <- cumsum(pmin(crudeinits[tmat2[m, c("from")], tmat2[m, c("to")]] * time_diffs, 0.99))
+      }
+      A <- list(Haz = data.frame(time=rep(taus, M), Haz=cumhaz,
+                                 trans=rep(1:M, rep(K,M))),
+                trans = tmat)
+    } else if(inits == "unif"){
+      A <- list(Haz = data.frame(time=rep(taus, M), Haz = c(replicate(M, cumsum(runif(K, 0, 1)))),
+                                 trans = rep(1:M, rep(K, M))),
+                trans = tmat)
+    } else if(inits == "beta"){
+      A <- list(Haz = data.frame(time = rep(taus, M), Haz = c(replicate(M, cumsum(rbeta(K, shape1 = beta_params[1], shape2 = beta_params[2])))),
+                                 trans = rep(1:M, rep(K, M))),
+                trans = tmat)
+    }
     attr(A, "class") <- "msfit"
   }
   Ainit <- A
+  
+
   
   # EM Algorithm - Start -----------------------------------------------------
   
@@ -209,6 +239,7 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
   
   
   for (it in 1:(maxit+1)) { # Iterations
+    nan_warning_issued <- FALSE
     if(it == (maxit+1)) {
       final_step <- TRUE
     }
@@ -283,11 +314,19 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
           ptf <- ptf[, , ai] #Extract only the probabilities from the state we are in
           #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
           denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
-          if(denom == 0){
-            stop(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " impossible with current estimates.
-                        This is likely due to a probability being set to 0. Try increasing prob_tol or using different initial intensity estimates."))
+          if(denom == 0 & !nan_warning_issued){
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " is impossible with current estimates.
+                        An estimated probability was 0, whereas it shouldn't have been. Try increasing prob_tol or using different initial intensity estimates.\n", 
+                           "Ignore message if it disappears after a few iterations."))
+            nan_warning_issued <- TRUE
+          } else if(denom < 0 & !nan_warning_issued){
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " impossible with current estimates.
+                        A calculated probability is smaller than 0. Try increasing prob_tol or using different initial intensity estimates.\n",
+                           "Ignore message if it disappears after a few iterations."))
+            nan_warning_issued <- TRUE
           }          
-          ll <- ll + log(denom) #Add this to likelihood
+          log_denom <- suppressWarnings(log(denom))
+          ll <- ll + log_denom #Add this to likelihood
           #ptf = P_{ai, h}(l_i, t) - h = columns, t = rows
           #(P_{a_i, 1}(l_i, t_1)      ....        P_{a_i, H}(l_i, t_1))
           #(      ....                                                )
@@ -344,9 +383,16 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
           ptf <- ptf[, , ai] #Extract only the probabilities from the state we are in
           #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
           denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
-          if(denom == 0){
-            stop(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " impossible with current estimates.
-                        This is likely due to a probability being set to 0. Try increasing prob_tol or using different initial intensity estimates."))
+          if(denom == 0 & !nan_warning_issued){
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " is impossible with current estimates.
+                        An estimated probability was 0, whereas it shouldn't have been. Try increasing prob_tol or using different initial intensity estimates.\n", 
+                           "Ignore message if it disappears after a few iterations."))
+            nan_warning_issued <- TRUE
+          } else if(denom < 0 & !nan_warning_issued){
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " impossible with current estimates.
+                        A calculated probability is smaller than 0. Try increasing prob_tol or using different initial intensity estimates.\n",
+                           "Ignore message if it disappears after a few iterations"))
+            nan_warning_issued <- TRUE
           }          
           #ptf = P_{ai, h}(l_i, t) - h = columns, t = rows
           #(P_{a_i, 1}(l_i, t_1)      ....        P_{a_i, H}(l_i, t_1))
@@ -438,7 +484,14 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
           #The denominator in the exact case is also different:
           #\sum_{m \in R_bi} \alpha_mbi^k P_aim(l_i, \tau_k_ri-1)
           denom_exact <- ptb_exact[1,ai]
-          ll <- ll + log(denom_exact)
+          log_denom_exact <- suppressWarnings(log(denom_exact))
+          if(is.nan(log_denom_exact) & !nan_warning_issued){
+            warning(paste0("Negative probabilities calculated during iteration ", it, ". \n", 
+                           "This is probably due to the initial estimates chosen in 'inits'. \n",
+                           "If warning doesn't disappear after a few iterations, try to change the 'inits' argument."))
+            nan_warning_issued <- TRUE
+          }
+          ll <- ll + log_denom_exact
           
           
           #**** Update Y and d ----------------------------------------------------------
@@ -524,9 +577,11 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
       #Also calculate Y_g^k resulting in a vector of length K
       Y_g <- apply(Y[, , g], 2, sum)
       KKT_check <- any(sum_d > Y_g)
+      Ylol <<- Y
+      dlol <<- d
       if(is.na(KKT_check)){
         stop("An observed transition has become impossible with the current estimates. 
-             This is likely due to a probability being set to 0. Try increasing prob_tol to resolve the issue.")
+             This is likely due to a probability being set to 0. Try lowering 'prob_tol' to resolve the issue.")
       }
       if(KKT_check){
         KKT_violated <- KKT_violated + 1
@@ -616,7 +671,7 @@ EM_multinomial <- function(gd, tmat, tmat2, support_manual, exact, maxit, tol, c
         break
       }
     }
-
+    nan_warning_issued <- FALSE
     #browser()
   } #End of iteration over it (EM algorithm iterations)
   

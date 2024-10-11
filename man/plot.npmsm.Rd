@@ -15,5 +15,7 @@
 A plot will be produced in the plotting window
 }
 \description{
-A wrapper for \code{\link[mstate:msfit]{msfit}}
+Plot the cumulative intensities of a \code{'npmsm'} objects.
+A wrapper for \code{\link[mstate:plot.msfit]{plot.msfit}} from the
+\code{\link[mstate:mstate]{mstate}} package.
 }

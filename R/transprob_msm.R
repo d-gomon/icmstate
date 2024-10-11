@@ -1,7 +1,7 @@
 #'
 #' @description For \code{'msm'} objects: determine transition probabilities
 #' (as in \code{\link[mstate:probtrans]{probtrans}})  from an 
-#' \code{\link[msm:msm]{msm}} object.
+#' \code{\link[msm:msm]{msm}} object. Currently only direction = "forward" is supported.
 #' 
 #' @rdname transprob
 #'
