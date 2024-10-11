@@ -131,7 +131,7 @@ in the related article.}
 \item{...}{Further arguments to \code{\link{estimate_support_msm}}}
 }
 \value{
-A data frame with the following entries:
+A list with the following entries:
 \describe{
   \item{\code{A}: }{A list of class \code{\link[mstate:msfit]{msfit}} containing 
   the cumulative intensities for each transition and the transition matrix used;}

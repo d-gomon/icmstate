@@ -196,7 +196,7 @@ It can be shown that the estimators from @Frydman1995 can be compared with the t
     $P_{11}(0, s)$ &  $1 - F(s) =  1- F_{12}(s) - F_{13}(s)$ & $\mathcal{S}_{12} \cup \mathcal{S}_{13}$\\
     $P_{13}(0, s)$ & $F_{13}(s)$ & $\mathcal{S}_{13}$ \\
     $P_{13}(0, s) + P_{11}(0,s)$ & $1 - F_{12}(s)$ & $\mathcal{S}_{12}$ \\
-    $\prod_{s < \tau_k \leq s + v} (1-\alpha_{24}^k)$ & $G_s(v) = \prod_{s < u \leq s+v} \left(  1 - \Lambda_{23}(\{u\}) \right)$& $\mathcal{S}_{23}$
+    $P_{24}(s,s+v) = \prod_{s < \tau_k \leq s + v} (1-\alpha_{24}^k)$ & $G_s(v) = \prod_{s < u \leq s+v} \left(  1 - \Lambda_{23}(\{u\}) \right)$& $\mathcal{S}_{23}$
 \end{tabular}
 \end{center} 
 
@@ -293,6 +293,7 @@ And they coincide again!
 
 Additionally, an attempt was made to use the combination of @Hudgens2001 and @Hudgens2005 to determine the support of the general interval-censored multi-state problem. This attempt can be reproduced using the `estimate_support_msm()` function, although the resulting support intervals do not align with the empirical result of the `npmsm()` function. 
 
+Will be covered at a later time, when we obtain a correct result.
 
 
 

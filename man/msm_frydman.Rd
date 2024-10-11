@@ -21,6 +21,21 @@ msm_frydman(data, tol = 1e-08)
 \item{tol}{Tolerance of the EM algorithm. Algorithm will stop when the absolute difference 
 between current mass estimates and new estimates is smaller than the tolerance}
 }
+\value{
+A list with the following entries:
+\describe{
+  \item{\code{data_idx}: }{A list containing the data used for the fit (\code{matdata}),
+  the indices for which group a subject belongs to (\code{GroupX_idx}), some computational 
+  parameters (see Frydman(1995)) and the unique failure times of the 2->3 and 1->3
+  transitions respectively in \code{t_n_star} and \code{e_k_star};}
+  \item{\code{supportMSM}: }{A list containing all transition intervals in \code{A} and
+  the theoretical support intervals in \code{Q_mat};}
+  \item{\code{z_lambda}: }{Computational quantities, see Frydman(1995);}
+  \item{\code{cdf}: }{A list of functions that allow to recover the cdf for 
+  the 1->3 (\code{F13}) and 1->2 (\code{F12}) transition and the cumulative hazard 
+  for the 2->3 (\code{Lambda23}) transition.;}
+}
+}
 \description{
 Determine NPMLE for Multi State illness death Markov model using Frydman (1995)
 }
