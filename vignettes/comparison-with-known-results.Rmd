@@ -287,13 +287,13 @@ And they coincide again!
 
 
 
-# Hudgens (2001/2005) support determination {#Hudgens-support}
+<!-- # Hudgens (2001/2005) support determination {#Hudgens-support} -->
 
-@Hudgens2005 demonstrated a result for determining the support intervals of interval censored data through the use of graph theory. He further extended the theory to determine when a NPMLE actually exists in the presence of truncation. The resulting theory can be used to determine existence of an NPMLE in the case of interval censored and truncated data using the `supportHudgens()` function. 
+<!-- @Hudgens2005 demonstrated a result for determining the support intervals of interval censored data through the use of graph theory. He further extended the theory to determine when a NPMLE actually exists in the presence of truncation. The resulting theory can be used to determine existence of an NPMLE in the case of interval censored and truncated data using the `supportHudgens()` function.  -->
 
-Additionally, an attempt was made to use the combination of @Hudgens2001 and @Hudgens2005 to determine the support of the general interval-censored multi-state problem. This attempt can be reproduced using the `estimate_support_msm()` function, although the resulting support intervals do not align with the empirical result of the `npmsm()` function. 
+<!-- Additionally, an attempt was made to use the combination of @Hudgens2001 and @Hudgens2005 to determine the support of the general interval-censored multi-state problem. This attempt can be reproduced using the `estimate_support_msm()` function, although the resulting support intervals do not align with the empirical result of the `npmsm()` function.  -->
 
-Will be covered at a later time, when we obtain a correct result.
+<!-- Will be covered at a later time, when we obtain a correct result. -->
 
 
 

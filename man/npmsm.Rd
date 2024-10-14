@@ -174,7 +174,7 @@ A list with the following entries:
 \description{
 For a general Markov chain multi-state model with interval censored 
 transitions calculate the NPMLE of the transition intensities. The estimates 
-are returned as an \code{\link[mstate:msfit]{'msfit'}} object.
+are returned as an \code{\link[mstate:msfit]{msfit}} object.
 }
 \details{
 Denote the unique observation times in the data as \eqn{0 = \tau_0, \tau_1, \ldots, \tau_K}{0 = tau_0, tau_1, ..., tau_K}
@@ -231,5 +231,5 @@ Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573
  \code{\link{plot.npmsm}} for plotting the cumulative intensities, 
  \code{\link{print.npmsm}} for printing some output summaries,
  \code{\link{visualise_msm}} for visualising data,
- \code{\link[mstate:msfit]{'msfit'}} for details on the output object.
+ \code{\link[mstate:msfit]{msfit}} for details on the output object.
 }
