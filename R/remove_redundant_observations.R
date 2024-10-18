@@ -20,6 +20,21 @@
 #' 
 #' @importFrom utils tail
 #' 
+#' @examples
+#' #We simulate some data
+#' #Function to generate evaluation times: at 0 and uniform inter-observation
+#' eval_times <- function(n_obs, stop_time){
+#'  cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
+#' }
+#' 
+#' #Simulate illness-death model data with Weibull transitions
+#' sim_dat <- sim_id_weib(n = 20, n_obs = 6, stop_time = 15, eval_times = eval_times,
+#'                        start_state = "stable", shape = c(0.5, 0.5, 2), 
+#'                        scale = c(5, 10, 10/gamma(1.5)))
+#' visualise_msm(sim_dat)
+#' require(mstate)
+#' sim_dat_clean <- remove_redundant_observations(sim_dat, trans.illdeath())
+#' visualise_msm(sim_dat_clean)
 #' 
 
 
@@ -52,10 +67,14 @@ remove_redundant_observations <- function(gd, tmat){
   # - Landed in an absorbing state (only if tmat is present)
   # - Observed intermediate state multiple times (we cannot have loops, so must have stayed in this state)
   
-  #Loop over subjects
+
+  #Keep track of indices to remove
+  idx_remove <- NULL
+  #Loop over subjects  
   for(i in 1:n){
     i_idx <- which(gd[, "id"] == unique_id[i])
-    #Which entries are duplicated for current subject?
+    smallest_entry <- min(i_idx)
+    #Which state entries are duplicated for current subject?
     bool_dupl <- duplicated(gd[i_idx, "state"])
     duplicated_idx <- bool_dupl
     #We want to retain the last duplicated entry of each state,
@@ -69,13 +88,15 @@ remove_redundant_observations <- function(gd, tmat){
     } else{ #If we do not know whether we have absorbing states, we also retain the final state
       duplicated_idx[length(duplicated_idx)] <- FALSE
     }
-    
-
     #Remove entries 
     remove_idx <- which(duplicated_idx)
-    if(length(remove_idx > 0)){
-      gd <- gd[-i_idx[remove_idx],]  
+    if(length(remove_idx) > 0){
+      idx_remove <- c(idx_remove, smallest_entry-1 + remove_idx)
+      #gd <- gd[-i_idx[remove_idx],]
     }
+  }
+  if(length(idx_remove) > 0){
+    gd <- gd[-idx_remove,]  
   }
   return(gd)
 }

@@ -9,8 +9,8 @@ Authors@R: c(
   comment = c(ORCID = "0000-0001-5395-1422")))
 Maintainer: Daniel Gomon <dgstatsoft@gmail.com>
 Description: Allows for the estimation of transition intensities in interval-censored
-    multi-state models using the approach of Gomon and Putter (2024) (Multinomial likelihood) or 
-    Gu et al. (2023) (Poisson likelihood).
+    multi-state models using the approach of Gomon and Putter (2024) <doi:10.48550/arXiv.2409.07176> or 
+    Gu et al. (2023) <doi:10.1093/biomet/asad073>.
 License: GPL (>= 2)
 Imports: 
     Rcpp,

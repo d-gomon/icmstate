@@ -140,7 +140,7 @@
 #' 
 #' 
 #' @importFrom mstate to.trans2 msfit probtrans
-#' @importFrom igraph is_dag
+#' @importFrom igraph is_dag graph_from_adjacency_matrix
 #' @import checkmate
 #' @export
 #' 

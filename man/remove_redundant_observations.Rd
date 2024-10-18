@@ -24,3 +24,20 @@ when a transient state is observed multiple times between transitions (as
 we cannot have loops, therefore no extra information is provided when 
 we observe a transient state multiple times).
 }
+\examples{
+#We simulate some data
+#Function to generate evaluation times: at 0 and uniform inter-observation
+eval_times <- function(n_obs, stop_time){
+ cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
+}
+
+#Simulate illness-death model data with Weibull transitions
+sim_dat <- sim_id_weib(n = 20, n_obs = 6, stop_time = 15, eval_times = eval_times,
+                       start_state = "stable", shape = c(0.5, 0.5, 2), 
+                       scale = c(5, 10, 10/gamma(1.5)))
+visualise_msm(sim_dat)
+require(mstate)
+sim_dat_clean <- remove_redundant_observations(sim_dat, trans.illdeath())
+visualise_msm(sim_dat_clean)
+
+}
