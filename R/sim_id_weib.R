@@ -1,4 +1,4 @@
-#' Simulate panel data from an illness-death model with weibull transitions
+#' Simulate panel data from an illness-death model with Weibull transition hazards
 #' 
 #' @description An illness-death model has 3 transitions:
 #' \describe{
@@ -27,6 +27,11 @@
 #' @param ... Further parameters to \code{eval_times} function.
 #' 
 #' @export
+#' 
+#' @returns Panel data in the form of a \code{data.frame} with 3 named columns
+#'  id, time and state. These represent the subject identifier, the observation
+#'  time and the state at the 
+#' observation time. 
 #' 
 #' @importFrom stats rweibull runif
 #' 

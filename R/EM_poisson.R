@@ -181,9 +181,9 @@ EM_poisson <- function(gd, tmat, tmat2, inits, beta_params, support_manual, exac
               trans = tmat)
     attr(A, "class") <- "msfit"
   } else if(manual){
-    print(paste0("Enter your initial estimates for the cumulative hazard as a vector of length ", M*K, " at the following times: ", paste(c(0, taus[-length(taus)]), taus, sep = "-")))
+    message(paste0("Enter your initial estimates for the cumulative hazard as a vector of length ", M*K, " at the following times: ", paste(c(0, taus[-length(taus)]), taus, sep = "-")))
     Haz_manual <- scan(what = double(), nmax = M*K)
-    print(Haz_manual)
+    message(Haz_manual)
     #Create list with initial hazard estimates and corresponding transition numbering
     A <- list(Haz = data.frame(time=rep(taus, M), Haz=Haz_manual,
                                trans=rep(1:M, rep(K,M))),
@@ -367,137 +367,138 @@ EM_poisson <- function(gd, tmat, tmat2, inits, beta_params, support_manual, exac
           
           #End of non-exactly observed case (updating of d and Y)
         } else { 
-          
-          #*** Case: Exactly Observed Transitions --------------------------------------
           stop("Exactly observed not implemented yet for method = poisson")
-          
-          #**** Forward Probabilities ---------------------------------------------------
-          
-          ptf <- probtrans_C(int_mats, predt=li, cutoff = ri, direction="forward", as.df=FALSE) #Calculate P(li, t) - forward multiplication
-          # ptf <- tryCatch(probtrans(A, predt=li, direction="forward", variance=FALSE),
-          #                 warning = function(cond){
-          #                   message(conditionMessage(cond))
-          #                   print(tail(probtrans(A, predt=li, direction="forward", variance=FALSE)[[1]]))
-          #                   probtrans(A, predt=li, direction="forward", variance=FALSE)
-          #                 })
-          ptf <- ptf[, , ai] #Extract only the probabilities from the state we are in
-          #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
-          denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
-          if(denom == 0){
-            stop(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " impossible with current estimates.
-                        This is likely due to a probability being set to 0. Try increasing prob_tol or using different initial intensity estimates."))
-          }          
-          #ptf = P_{ai, h}(l_i, t) - h = columns, t = rows
-          #(P_{a_i, 1}(l_i, t_1)      ....        P_{a_i, H}(l_i, t_1))
-          #(      ....                                                )
-          #(      ....                                                )
-          #(P_{a_i, 1}(l_i, t_n)      ....        P_{a_i, H}(l_i, t_n))
-          
-          #**** Extra variables for Exactly observed ------------------------------------
-          
-          #Match bi with entry in exact
-          exact_idx <- which(exact == bi)
-          #From which states is bi reachable?
-          bi_reachable_from <- reachable_from[[exact_idx]]
-          #From how many states can bi be reached?
-          n_reachable_from <- length(bi_reachable_from)
-          #Associated transno for these transitions?
-          bi_reachable_from_transno <- reachable_from_transno[[exact_idx]]
-          #Largest tau just before ri (we exploit the fact that C++ returns index - 1)
-          ri_minus <- taus[binary_search_larger_equal(taus, ri)]
-          #We need different transition probabilities in the exact case.
-          
-          #**** Backward Probabilities --------------------------------------------------
-          
-          #We no longer calculate probabilities until r_i, but instead until \tau_{r_i-1}
-          ptb <- probtrans_C(int_mats, predt=ri_minus, cutoff = li, direction="fixedhorizon", as.df=FALSE) #Calculate P(0, tau_{k_{r_i}-1}) - backward multiplication
-          #Extract only probabilities to states from which we can reach bi
-          #Store this in 3D array: rows = time, columns = all states g in MSM
-          #and 3D dimension = states m from which bi can be reached
-          ptbtemp <- array(NA, dim = c(dim(ptb)[1], H+1, n_reachable_from))
-          ptbtemp[, 1, ] <- ptb[, 1, 1]
-          #Fill ptbtemp matrix
-          for(r in seq_along(bi_reachable_from)) { #Iterate over states that bi can be reached from
-            for(l in 2:(H+1)) { #Iterate from 2 because first column is time.
-              ptbtemp[, l, r] <- ptb[, bi_reachable_from[r]+1 , l-1]  
-            }
-          }
-          dimnames(ptbtemp)[[2]] <- c("time", paste0("pstate", 1:H))
-          dimnames(ptbtemp)[[3]] <- bi_reachable_from
-          #ptbtemp = P_{g, r}(t, r_i-) - g = columns, t = rows, r (m in overleaf) = 3rd dimension, r_i- fixed.
-          #(P_{1, r}(t_1, r_i-)      ....        P_{H, r}(t_1, r_i-))
-          #(      ....                                            )
-          #(      ....                                            )
-          #(P_{1, r}(t_n, r_i-)      ....        P_{H, r}(t_n, r_i-))
-          #3rd dimension iterates over r from reachable_from
-          
-          
-          
-          #**** Calculate sum over reachable from exact state --------
-          
-          #------------------------------------------------------------------------#
-          #Calculation of \sum_{m \in R_bi} \alpha_mbi^k P_gm(\tau_k-1, \tau_k_ri-1)
-          #------------------------------------------------------------------------#
-          #Create alpha_{mb_i^k}^{t} matrix to calculate sum over r in reachable_from
-          arb <- vector(mode = "numeric", length = n_reachable_from)
-          for(r in seq_along(bi_reachable_from_transno)) {
-            #Get only cumulative hazard estimates for this transition
-            Arb <- A$Haz[A$Haz$trans==bi_reachable_from_transno[r],]
-            #Find index where A$Haz$time == r_i
-            idx <- binary_search_larger_equal(Arb$time, ri) + 1
-            #hazard = difference in cumulative hazard
-            arb[r] <- Arb$Haz[idx] - Arb$Haz[idx-1]
-          }
-          
-          #We obtain the required summation by matrix * vector multiplication
-          ptb_exact <- matrix(NA, nrow = dim(ptbtemp)[1], ncol = dim(ptbtemp)[2]-1)
-          for(s in 2:(dim(ptbtemp)[2])) {
-            ptb_exact[,s-1] <- rowSums(t(t(as.matrix(ptbtemp[, s, ])) * arb))
-          }
-          #Below line can be commented away, programming help.
-          rownames(ptb_exact) <- ptbtemp[, 1, 1]
-          #------------------------------------------------------------------------#
-          #ptb_exact = \sum_{m \in R} \alpha_{mb_i}^k P_{g, m}(t, \tau_{k_r_i-1}) - g = columns, t = rows
-          #(\sum_{m \in R} alpha_{mbi}^{t_1} * P_{1m}(t_1, \tau_{k_{r_i-1})      ....        \sum_{m \in R} alpha_{mbi}^{t_1} * P_{Hm}(t_1, \tau_{k_{r_i-1}))
-          #(      ....                                            )
-          #(      ....                                            )
-          #(\sum_{m \in R} alpha_{mbi}^{t_n} * P_{1m}(t_1, \tau_{k_{r_i-1})      ....        \sum_{m \in R} alpha_{mbi}^{t_n} * P_{Hm}(t_1, \tau_{k_{r_i-1}))
-          #We obtain a matrix of dimensions (relevant times, #states)
-          #------------------------------------------------------------------------#
-          
-          
-          #The denominator in the exact case is also different:
-          #\sum_{m \in R_bi} \alpha_mbi^k P_aim(l_i, \tau_k_ri-1)
-          denom_exact <- ptb_exact[1,ai]
-          log_denom_exact <- suppressWarnings(log(denom_exact))
-          if(is.nan(log_denom_exact) & !nan_warning_issued){
-            warning(paste0("Negative probabilities calculated during iteration ", it, ". \n", 
-                           "This is probably due to the initial estimates chosen in 'inits'. \n",
-                           "If warning doesn't disappear after a few iterations, try to change the 'inits' argument."))
-            nan_warning_issued <- TRUE
-          }
-          ll <- ll + log_denom_exact
-          
-          
-          #**** Update Y and d ----------------------------------------------------------
-          
-          
-          #--------------------------Calculate Y-----------------------------------#
-          #Remove last row from ptf (because \tau_{k-1} cannot be larger than \tau_{k_r_i-1})
-          tmp <- ptf[-nrow(ptf),-1] * ptb_exact / denom_exact
-          for (h in 1:H) Y[i, wh, h] <- tmp[, h] 
-          
-          #--------------------------Calculate d-----------------------------------#
-          tmp_insert <- rep(0, ncol(ptb_exact))
-          tmp_insert[bi] <- 1
-          ptb_exact_temp <- rbind(ptb_exact, tmp_insert)
-          for (m in 1:M) {
-            g <- tmat2$from[m]; h <- tmat2$to[m]
-            agh <- int_mats$intensity_matrices[g, h, wh]
-            #we used to have ptb[-nrow(ptb), h+1] but that was wrong, should be -1 instead.
-            d[i, wh, m] <- ptf[-nrow(ptf),g+1]*agh*ptb_exact_temp[-1,h]/denom_exact
-          }
-          #End of exactly observed case (updating of d and Y)
+          # 
+          # #*** Case: Exactly Observed Transitions --------------------------------------
+          # 
+          # 
+          # #**** Forward Probabilities ---------------------------------------------------
+          # 
+          # ptf <- probtrans_C(int_mats, predt=li, cutoff = ri, direction="forward", as.df=FALSE) #Calculate P(li, t) - forward multiplication
+          # # ptf <- tryCatch(probtrans(A, predt=li, direction="forward", variance=FALSE),
+          # #                 warning = function(cond){
+          # #                   message(conditionMessage(cond))
+          # #                   print(tail(probtrans(A, predt=li, direction="forward", variance=FALSE)[[1]]))
+          # #                   probtrans(A, predt=li, direction="forward", variance=FALSE)
+          # #                 })
+          # ptf <- ptf[, , ai] #Extract only the probabilities from the state we are in
+          # #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
+          # denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
+          # if(denom == 0){
+          #   stop(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " impossible with current estimates.
+          #               This is likely due to a probability being set to 0. Try increasing prob_tol or using different initial intensity estimates."))
+          # }          
+          # #ptf = P_{ai, h}(l_i, t) - h = columns, t = rows
+          # #(P_{a_i, 1}(l_i, t_1)      ....        P_{a_i, H}(l_i, t_1))
+          # #(      ....                                                )
+          # #(      ....                                                )
+          # #(P_{a_i, 1}(l_i, t_n)      ....        P_{a_i, H}(l_i, t_n))
+          # 
+          # #**** Extra variables for Exactly observed ------------------------------------
+          # 
+          # #Match bi with entry in exact
+          # exact_idx <- which(exact == bi)
+          # #From which states is bi reachable?
+          # bi_reachable_from <- reachable_from[[exact_idx]]
+          # #From how many states can bi be reached?
+          # n_reachable_from <- length(bi_reachable_from)
+          # #Associated transno for these transitions?
+          # bi_reachable_from_transno <- reachable_from_transno[[exact_idx]]
+          # #Largest tau just before ri (we exploit the fact that C++ returns index - 1)
+          # ri_minus <- taus[binary_search_larger_equal(taus, ri)]
+          # #We need different transition probabilities in the exact case.
+          # 
+          # #**** Backward Probabilities --------------------------------------------------
+          # 
+          # #We no longer calculate probabilities until r_i, but instead until \tau_{r_i-1}
+          # ptb <- probtrans_C(int_mats, predt=ri_minus, cutoff = li, direction="fixedhorizon", as.df=FALSE) #Calculate P(0, tau_{k_{r_i}-1}) - backward multiplication
+          # #Extract only probabilities to states from which we can reach bi
+          # #Store this in 3D array: rows = time, columns = all states g in MSM
+          # #and 3D dimension = states m from which bi can be reached
+          # ptbtemp <- array(NA, dim = c(dim(ptb)[1], H+1, n_reachable_from))
+          # ptbtemp[, 1, ] <- ptb[, 1, 1]
+          # #Fill ptbtemp matrix
+          # for(r in seq_along(bi_reachable_from)) { #Iterate over states that bi can be reached from
+          #   for(l in 2:(H+1)) { #Iterate from 2 because first column is time.
+          #     ptbtemp[, l, r] <- ptb[, bi_reachable_from[r]+1 , l-1]  
+          #   }
+          # }
+          # dimnames(ptbtemp)[[2]] <- c("time", paste0("pstate", 1:H))
+          # dimnames(ptbtemp)[[3]] <- bi_reachable_from
+          # #ptbtemp = P_{g, r}(t, r_i-) - g = columns, t = rows, r (m in overleaf) = 3rd dimension, r_i- fixed.
+          # #(P_{1, r}(t_1, r_i-)      ....        P_{H, r}(t_1, r_i-))
+          # #(      ....                                            )
+          # #(      ....                                            )
+          # #(P_{1, r}(t_n, r_i-)      ....        P_{H, r}(t_n, r_i-))
+          # #3rd dimension iterates over r from reachable_from
+          # 
+          # 
+          # 
+          # #**** Calculate sum over reachable from exact state --------
+          # 
+          # #------------------------------------------------------------------------#
+          # #Calculation of \sum_{m \in R_bi} \alpha_mbi^k P_gm(\tau_k-1, \tau_k_ri-1)
+          # #------------------------------------------------------------------------#
+          # #Create alpha_{mb_i^k}^{t} matrix to calculate sum over r in reachable_from
+          # arb <- vector(mode = "numeric", length = n_reachable_from)
+          # for(r in seq_along(bi_reachable_from_transno)) {
+          #   #Get only cumulative hazard estimates for this transition
+          #   Arb <- A$Haz[A$Haz$trans==bi_reachable_from_transno[r],]
+          #   #Find index where A$Haz$time == r_i
+          #   idx <- binary_search_larger_equal(Arb$time, ri) + 1
+          #   #hazard = difference in cumulative hazard
+          #   arb[r] <- Arb$Haz[idx] - Arb$Haz[idx-1]
+          # }
+          # 
+          # #We obtain the required summation by matrix * vector multiplication
+          # ptb_exact <- matrix(NA, nrow = dim(ptbtemp)[1], ncol = dim(ptbtemp)[2]-1)
+          # for(s in 2:(dim(ptbtemp)[2])) {
+          #   ptb_exact[,s-1] <- rowSums(t(t(as.matrix(ptbtemp[, s, ])) * arb))
+          # }
+          # #Below line can be commented away, programming help.
+          # rownames(ptb_exact) <- ptbtemp[, 1, 1]
+          # #------------------------------------------------------------------------#
+          # #ptb_exact = \sum_{m \in R} \alpha_{mb_i}^k P_{g, m}(t, \tau_{k_r_i-1}) - g = columns, t = rows
+          # #(\sum_{m \in R} alpha_{mbi}^{t_1} * P_{1m}(t_1, \tau_{k_{r_i-1})      ....        \sum_{m \in R} alpha_{mbi}^{t_1} * P_{Hm}(t_1, \tau_{k_{r_i-1}))
+          # #(      ....                                            )
+          # #(      ....                                            )
+          # #(\sum_{m \in R} alpha_{mbi}^{t_n} * P_{1m}(t_1, \tau_{k_{r_i-1})      ....        \sum_{m \in R} alpha_{mbi}^{t_n} * P_{Hm}(t_1, \tau_{k_{r_i-1}))
+          # #We obtain a matrix of dimensions (relevant times, #states)
+          # #------------------------------------------------------------------------#
+          # 
+          # 
+          # #The denominator in the exact case is also different:
+          # #\sum_{m \in R_bi} \alpha_mbi^k P_aim(l_i, \tau_k_ri-1)
+          # denom_exact <- ptb_exact[1,ai]
+          # log_denom_exact <- suppressWarnings(log(denom_exact))
+          # if(is.nan(log_denom_exact) & !nan_warning_issued){
+          #   warning(paste0("Negative probabilities calculated during iteration ", it, ". \n", 
+          #                  "This is probably due to the initial estimates chosen in 'inits'. \n",
+          #                  "If warning doesn't disappear after a few iterations, try to change the 'inits' argument."))
+          #   nan_warning_issued <- TRUE
+          # }
+          # ll <- ll + log_denom_exact
+          # 
+          # 
+          # #**** Update Y and d ----------------------------------------------------------
+          # 
+          # 
+          # #--------------------------Calculate Y-----------------------------------#
+          # #Remove last row from ptf (because \tau_{k-1} cannot be larger than \tau_{k_r_i-1})
+          # tmp <- ptf[-nrow(ptf),-1] * ptb_exact / denom_exact
+          # for (h in 1:H) Y[i, wh, h] <- tmp[, h] 
+          # 
+          # #--------------------------Calculate d-----------------------------------#
+          # tmp_insert <- rep(0, ncol(ptb_exact))
+          # tmp_insert[bi] <- 1
+          # ptb_exact_temp <- rbind(ptb_exact, tmp_insert)
+          # for (m in 1:M) {
+          #   g <- tmat2$from[m]; h <- tmat2$to[m]
+          #   agh <- int_mats$intensity_matrices[g, h, wh]
+          #   #we used to have ptb[-nrow(ptb), h+1] but that was wrong, should be -1 instead.
+          #   d[i, wh, m] <- ptf[-nrow(ptf),g+1]*agh*ptb_exact_temp[-1,h]/denom_exact
+          # }
+          # #End of exactly observed case (updating of d and Y)
         } 
       } #End of for loop over j (times of observation of subject i)
       if(newmet == TRUE){

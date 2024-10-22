@@ -29,8 +29,28 @@
 #' @import checkmate
 #' @export
 #' 
+#' 
+#' 
+#' @returns A plot will be produced in the plotting window. When assigning  
+#' the output to an object, the underlying data frame used for plotting 
+#' and a \code{'ggplot'} object will be returned in a list.
+#' 
 #' @examples 
-#' #Empty for now
+#' require(mstate)
+#' require(ggplot2)
+#' #Generate from an illness-death model with exponential transitions with 
+#' #rates 1/2, 1/10 and 1 for 10 subjects over a time grid.
+#' gd <- sim_weibmsm(tmat = trans.illdeath(), shape = c(1,1,1),
+#'                   scale = c(2, 10, 1), n_subj = 10, obs_pars = c(2, 0.5, 20), 
+#'                   startprobs = c(0.9, 0.1, 0))
+#' #Fit 2 models: 1 with at most 4 iterations and 1 with at most 20
+#' mod1 <- npmsm(gd, trans.illdeath(), maxit = 4)
+#' mod2 <- npmsm(gd, trans.illdeath(), maxit = 20)
+#' 
+#' #Plot the transition probabilities from state 1, without interpolating 
+#' #the cumulative hazard for the npmsm runs with max 4 and 20 iterations.
+#' plot_probtrans(list(mod1, mod2), from = 1, interpolate = FALSE,
+#'                c.names = c("4 iterations", "20 iterations"))
 #' 
 #' 
 

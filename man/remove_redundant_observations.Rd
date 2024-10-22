@@ -16,6 +16,12 @@ remove_redundant_observations(gd, tmat)
 
 \item{tmat}{A transition matrix as created by \code{transMat}}
 }
+\value{
+A \code{data.frame} containing the information contained in  the 
+input \code{data.frame} \code{gd},
+but without redundant observations. Depending on whether \code{tmat} was 
+specified the function may remove more observations.
+}
 \description{
 Remove redundant observed states from a supplied data frame. 
 Observations are redundant either when we observe an absorbing state multiple 

@@ -17,9 +17,19 @@ evalstep(time, stepf, newtime, subst = -Inf, to.data.frame = FALSE)
 
 \item{to.data.frame}{Should the result be returned as a \code{data.frame}?}
 }
+\value{
+A numeric \code{vector} or \code{data.frame} (if \code{to.data.frame = TRUE})
+containing either the observed states or  the named columns \code{newtime} and 
+\code{res}, representing the observation times and observed states.
+}
 \description{
 Given a markov chain multi state model with exactly observed transition times,
 sample from this chain at the observation times, giving interval censored observations (panel data).
+}
+\examples{
+obs_states <- evalstep(time = seq(0, 20, 2), stepf = sample(1:9, 11, replace = TRUE),
+                newtime = c(-1, 1, 7, 9, 19))
+obs_states
 }
 \author{
 Hein Putter

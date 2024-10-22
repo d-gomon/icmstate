@@ -12,8 +12,30 @@ support_npmsm(npmsm, cutoff = 1e-08)
 \item{cutoff}{Above which value is a mass in a bin considered to be non-zero? 
 Default = 1e-8. Note that this is independent of bin size, so can be tricky!!}
 }
+\value{
+A list containing a list for each transition. Each transition 
+specific list contains the support intervals for that transition in a matrix 
+with 3 named columns L, R and dA, indicating the left/right-endpoints of the 
+support intervals and the change in the estimated intensities over this 
+support interval.
+}
 \description{
 For each transition in \code{tmat}, determine all consecutive 
 bins with non-zero (higher than \code{cutoff}) transition intensities.
 These then determine the numerical support of the transition.
+}
+\examples{
+require(mstate)
+require(ggplot2)
+#Generate from an illness-death model with exponential transitions with 
+#rates 1/2, 1/10 and 1 for 10 subjects over a time grid.
+gd <- sim_weibmsm(tmat = trans.illdeath(), shape = c(1,1,1),
+                  scale = c(2, 10, 1), n_subj = 10, obs_pars = c(2, 0.5, 20), 
+                  startprobs = c(0.9, 0.1, 0))
+#Fit 2 models: 1 with at most 4 iterations and 1 with at most 20
+mod1 <- npmsm(gd, trans.illdeath(), maxit = 4)
+
+#Determine support numerically:
+mod1_supp <- support_npmsm(mod1)
+mod1_supp[[1]]
 }

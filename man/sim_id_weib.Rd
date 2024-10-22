@@ -2,7 +2,7 @@
 % Please edit documentation in R/sim_id_weib.R
 \name{sim_id_weib}
 \alias{sim_id_weib}
-\title{Simulate panel data from an illness-death model with weibull transitions}
+\title{Simulate panel data from an illness-death model with Weibull transition hazards}
 \usage{
 sim_id_weib(
   n,
@@ -35,6 +35,12 @@ The first entry will be used for the first transition and so on.}
 The first entry will be used for the first transition and so on.}
 
 \item{...}{Further parameters to \code{eval_times} function.}
+}
+\value{
+Panel data in the form of a \code{data.frame} with 3 named columns
+ id, time and state. These represent the subject identifier, the observation
+ time and the state at the 
+observation time.
 }
 \description{
 An illness-death model has 3 transitions:

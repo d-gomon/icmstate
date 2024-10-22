@@ -17,6 +17,13 @@ and an indicator whether the interval results from a censored transition
   (1 = censoring, 0 = truncation);}
 } Note that the truncation intervals need to be in the form (N, Inf] with N a numeric value.}
 }
+\value{
+Returns an \code{'igraph'} object containing the graph with vertices 
+representing the intervals and edges between the vertices if the intervals 
+intersect. The vertices will be named accordingly, starting with a 'T' when 
+representing a truncation interval and 'C' when representing a censoring 
+interval.
+}
 \description{
 Given intervals, construct a graph containing vertices 
 representing these intervals and edges between the vertices if the intervals 

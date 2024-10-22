@@ -39,7 +39,7 @@ get_trans_intervals <- function(gd, tmat){
   id <- NULL
   
   #Sort gd according to id and then time (neater this way)
-  gd <- gd[order(gd[["id"]], gd[["time"]]),]
+  gd <- gd[order(gd["id"], gd["time"]),]
   
   
   #Extract some characteristics of the data

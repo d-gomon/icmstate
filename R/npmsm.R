@@ -217,9 +217,9 @@ npmsm <- function(gd, tmat, method = c("multinomial", "poisson"),
   assertDataFrame(gd, min.cols = 3, max.cols = 3, add = arg_checks)
   assertNames(names(gd), must.include = c("id", "state", "time"), 
               add = arg_checks)
-  assertIntegerish(gd[["id"]], add = arg_checks)
-  assertIntegerish(gd[["state"]], add = arg_checks)
-  assertNumeric(gd[["time"]], lower = 0, add = arg_checks)
+  assertIntegerish(gd[, "id"], add = arg_checks)
+  assertIntegerish(gd[, "state"], add = arg_checks)
+  assertNumeric(gd[, "time"], lower = 0, add = arg_checks)
   if(!missing(exact)){
     assertIntegerish(exact, lower = 1, upper = nrow(tmat), add = arg_checks)
   }

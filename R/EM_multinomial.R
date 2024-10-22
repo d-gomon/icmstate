@@ -162,9 +162,9 @@ EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, 
               trans = tmat)
     attr(A, "class") <- "msfit"
   } else if(manual){
-    print(paste0("Enter your initial estimates for the cumulative hazard as a vector of length ", M*K, " at the following times: ", paste(c(0, taus[-length(taus)]), taus, sep = "-")))
+    message(paste0("Enter your initial estimates for the cumulative hazard as a vector of length ", M*K, " at the following times: ", paste(c(0, taus[-length(taus)]), taus, sep = "-")))
     Haz_manual <- scan(what = double(), nmax = M*K)
-    print(Haz_manual)
+    message(Haz_manual)
     #Create list with initial hazard estimates and corresponding transition numbering
     A <- list(Haz = data.frame(time=rep(taus, M), Haz=Haz_manual,
                                trans=rep(1:M, rep(K,M))),

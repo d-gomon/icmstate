@@ -157,6 +157,12 @@ supportHudgens <- function(intervals, reduction = TRUE, existence = FALSE){
 #' Interval Censoring and Left Truncation, Journal of the Royal Statistical Society 
 #' Series B: Statistical Methodology, Volume 67, Issue 4, September 2005, Pages 573-587,
 #'  \doi{10.1111/j.1467-9868.2005.00516.x}
+#'  
+#' @returns Returns an \code{'igraph'} object containing the graph with vertices 
+#' representing the intervals and edges between the vertices if the intervals 
+#' intersect. The vertices will be named accordingly, starting with a 'T' when 
+#' representing a truncation interval and 'C' when representing a censoring 
+#' interval.
 #' 
 #' @import igraph
 #' @export

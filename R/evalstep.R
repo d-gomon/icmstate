@@ -12,7 +12,16 @@
 #' 
 #' @author Hein Putter
 #' 
+#' @return A numeric \code{vector} or \code{data.frame} (if \code{to.data.frame = TRUE})
+#' containing either the observed states or  the named columns \code{newtime} and 
+#' \code{res}, representing the observation times and observed states.
+#' 
 #' @export
+#' 
+#' @examples
+#' obs_states <- evalstep(time = seq(0, 20, 2), stepf = sample(1:9, 11, replace = TRUE),
+#'                 newtime = c(-1, 1, 7, 9, 19))
+#' obs_states
 
 
 evalstep <- function (time, stepf, newtime, subst = -Inf, to.data.frame = FALSE) 

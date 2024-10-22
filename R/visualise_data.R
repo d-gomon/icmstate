@@ -1,6 +1,6 @@
 #' Visualise data for illness-death model, only applicable to Frydman(1995) setting.
 #' 
-#' @param msmFrydman from \code{\link{msm_frydman}}
+#' @param msmFrydman A fitted model from \code{\link{msm_frydman}}
 #' @inheritParams msm_frydman
 #' 
 #' 
@@ -13,6 +13,24 @@
 #' \doi{10.2307/2337344}
 #' 
 #' @export
+#' 
+#' 
+#' @seealso See \code{\link{msm_frydman}} for fitting a model.
+#' 
+#' @returns Returns a visualisation of illness-death data, with the transition 
+#' from healthy to illness interval-censored and the other two transitions 
+#' observed exactly or right-censored. If \code{msmFrydman} is specified, the 
+#' support intervals from the fit are additionally plotted at the top of the 
+#' data visualisation.
+#' 
+#' @examples 
+#' data <- data.frame(delta = c(0, 0, 1, 1), Delta = c(0, 1, 0, 1),
+#'                    L = c(NA, NA, 1, 1.5), R = c(NA, 3, 2, 3),
+#'                    time = c(4, 5, 6, 7))
+#' 
+#' mod_frydman <- msm_frydman(data)
+#' visualise_data(data, mod_frydman)
+#' 
 
 
 visualise_data <- function(data, msmFrydman){

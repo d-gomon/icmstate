@@ -13,19 +13,38 @@ visualise_data(data, msmFrydman)
   In the left-truncated case, delta = 2 indicates initially observed in state 2.}
   \item{\code{Delta}:}{Was the transition to state 3 observed? (binary: 0 = no, 1 = yes);}
   \item{\code{L}:}{Left timepoint of interval censored transition to state 2 (numeric);}
-  \item{\code{R}:}{Left timepoint of interval censored transition to state 2 (numeric);}
+  \item{\code{R}:}{Right timepoint of interval censored transition to state 2 (numeric);}
   \item{\code{time}:}{Time of event (transition to 3) or right-censoring in state 2 (numeric);}
-  \item{\code{trunc}:}{(optional) Left-truncation time (numeric); Only used for entries with delta = 0 or 1.}
+  \item{\code{trunc}:}{(optional) Left-truncation time (numeric); Only used for entries with delta = 2.}
 }}
 
-\item{msmFrydman}{from \code{\link{msm_frydman}}}
+\item{msmFrydman}{A fitted model from \code{\link{msm_frydman}}}
+}
+\value{
+Returns a visualisation of illness-death data, with the transition 
+from healthy to illness interval-censored and the other two transitions 
+observed exactly or right-censored. If \code{msmFrydman} is specified, the 
+support intervals from the fit are additionally plotted at the top of the 
+data visualisation.
 }
 \description{
 Visualise data for illness-death model, only applicable to Frydman(1995) setting.
+}
+\examples{
+data <- data.frame(delta = c(0, 0, 1, 1), Delta = c(0, 1, 0, 1),
+                   L = c(NA, NA, 1, 1.5), R = c(NA, 3, 2, 3),
+                   time = c(4, 5, 6, 7))
+
+mod_frydman <- msm_frydman(data)
+visualise_data(data, mod_frydman)
+
 }
 \references{
 Frydman, H. (1995). Nonparametric Estimation of a Markov 
 'Illness-Death' Process from Interval- Censored Observations, with 
 Application to Diabetes Survival Data. Biometrika, 82(4), 773-789. 
 \doi{10.2307/2337344}
+}
+\seealso{
+See \code{\link{msm_frydman}} for fitting a model.
 }

@@ -1,6 +1,6 @@
 Package: icmstate
 Type: Package
-Title: Non-Parametric Estimation of Transition Intensities in Interval-Censored Multi-State Models
+Title: Interval Censored Multi-State Models
 Version: 0.1.0
 Authors@R: c(
   person("Daniel", "Gomon", email = "dgstatsoft@gmail.com", role = c("aut", "cre"),
@@ -8,7 +8,7 @@ Authors@R: c(
   person("Hein", "Putter", , role = "aut",
   comment = c(ORCID = "0000-0001-5395-1422")))
 Maintainer: Daniel Gomon <dgstatsoft@gmail.com>
-Description: Allows for the estimation of transition intensities in interval-censored
+Description: Allows for the non-parametric estimation of transition intensities in interval-censored
     multi-state models using the approach of Gomon and Putter (2024) <doi:10.48550/arXiv.2409.07176> or 
     Gu et al. (2023) <doi:10.1093/biomet/asad073>.
 License: GPL (>= 2)

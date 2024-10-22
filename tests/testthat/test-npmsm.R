@@ -254,7 +254,7 @@ test_that("profvis", {
     c(0, 0, 0)
   )
   
-  n <- 500
+  n <- 400
   gd <- NULL
   for (i in 1:n) {
     smsm <- msm::sim.msm(qmatrix, 14)
@@ -279,11 +279,7 @@ test_that("profvis", {
 
 
 
-test_that("Turnbull vs MSM (not everyone observed at 0)", {
-  
-  
-}
-)
+
 
 
 

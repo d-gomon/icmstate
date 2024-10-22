@@ -16,9 +16,31 @@ If missing, the smallest time in the first "npmsm" object will be used.}
 
 \item{sup_cutoff}{Cutoff to be used for determining the support intervals.}
 }
+\value{
+A plot will be produced in the plotting window. When assigning  
+the output to an object, the underlying data frame used for plotting 
+and a \code{'ggplot'} object will be returned in a list.
+}
 \description{
 For a fitted \code{npmsm} model plot the transition specific 
 survival probabilities. These are given by the product integral of the hazard 
 increments estimated for a single transition. This is equivalent to a Kaplan-Meier 
 estimator ignoring the existence of all other transitions.
+}
+\examples{
+require(mstate)
+require(ggplot2)
+#Generate from an illness-death model with exponential transitions with 
+#rates 1/2, 1/10 and 1 for 10 subjects over a time grid.
+gd <- sim_weibmsm(tmat = trans.illdeath(), shape = c(1,1,1),
+                  scale = c(2, 10, 1), n_subj = 10, obs_pars = c(2, 0.5, 20), 
+                  startprobs = c(0.9, 0.1, 0))
+mod1 <- npmsm(gd, trans.illdeath(), maxit = 4)
+mod2 <- npmsm(gd, trans.illdeath(), maxit = 20)
+
+#Plot the transition specific Kaplan-Meier estimators and their numerically 
+#determined support sets.
+plot_surv(list(mod1, mod2), support = TRUE)
+
+
 }

@@ -18,6 +18,12 @@
 #' 
 #' @export
 #' 
+#' 
+#' @returns A \code{data.frame} containing the information contained in  the 
+#' input \code{data.frame} \code{gd},
+#' but without redundant observations. Depending on whether \code{tmat} was 
+#' specified the function may remove more observations.
+#' 
 #' @importFrom utils tail
 #' 
 #' @examples

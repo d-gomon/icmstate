@@ -13,9 +13,9 @@ msm_frydman(data, tol = 1e-08)
   In the left-truncated case, delta = 2 indicates initially observed in state 2.}
   \item{\code{Delta}:}{Was the transition to state 3 observed? (binary: 0 = no, 1 = yes);}
   \item{\code{L}:}{Left timepoint of interval censored transition to state 2 (numeric);}
-  \item{\code{R}:}{Left timepoint of interval censored transition to state 2 (numeric);}
+  \item{\code{R}:}{Right timepoint of interval censored transition to state 2 (numeric);}
   \item{\code{time}:}{Time of event (transition to 3) or right-censoring in state 2 (numeric);}
-  \item{\code{trunc}:}{(optional) Left-truncation time (numeric); Only used for entries with delta = 0 or 1.}
+  \item{\code{trunc}:}{(optional) Left-truncation time (numeric); Only used for entries with delta = 2.}
 }}
 
 \item{tol}{Tolerance of the EM algorithm. Algorithm will stop when the absolute difference 
@@ -47,6 +47,16 @@ the NPMLE in the following form:
   \item{\code{F13}:}{Cumulative distribution function of 1->3 transition;}
   \item{\code{Lambda23}:}{Cumulative intensity of 2->3 transition;}
 }
+}
+\examples{
+data <- data.frame(delta = c(0, 0, 1, 1), Delta = c(0, 1, 0, 1),
+                   L = c(NA, NA, 1, 1.5), R = c(NA, 3, 2, 3),
+                   time = c(4, 5, 6, 7))
+
+mod_frydman <- msm_frydman(data)
+visualise_data(data, mod_frydman)
+
+
 }
 \references{
 Frydman, H. (1995). Nonparametric Estimation of a Markov 
