@@ -21,6 +21,7 @@ coverage](https://codecov.io/gh/d-gomon/icmstate/graph/badge.svg)](https://app.c
 <!-- [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/success)](https://cran.r-project.org/package=success) -->
 
 <!-- [![Biostatistics](https://img.shields.io/badge/Biostatistics-kxac041-%23003365)](https://doi.org/10.1093/biostatistics/kxac041) -->
+<!-- [![Codecov test coverage](https://codecov.io/gh/d-gomon/success/branch/main/graph/badge.svg)](https://codecov.io/gh/d-gomon/success?branch=main) -->
 <!-- badges: end -->
 
 # Interval-Censored Multi-STATE modelling (icmstate)
@@ -35,6 +36,11 @@ Multinomial likelihood approach as in [Gomon and Putter
 (2024)](https://doi.org/10.48550/arXiv.2409.07176) or the latent Poisson
 approach as in [Gu et al
 (2023)](https://doi.org/10.1093/biomet/asad073).
+
+## Using the package
+
+More information on how to use the package can be found in the vignettes
+under the `doc` directory.
 
 ## Installation
 
