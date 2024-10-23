@@ -296,12 +296,12 @@ EM_poisson <- function(gd, tmat, tmat2, inits, beta_params, support_manual, exac
           #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
           denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
           if(denom == 0 & !nan_warning_issued){
-            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " is impossible with current estimates.
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", unique_id[i], " in iteration ", it, " is impossible with current estimates.
                         An estimated probability was 0, whereas it shouldn't have been. Try increasing prob_tol or using different initial intensity estimates.\n", 
                            "Ignore message if it disappears after a few iterations."))
             nan_warning_issued <- TRUE
           } else if(denom < 0 & !nan_warning_issued){
-            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " impossible with current estimates.
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", unique_id[i], " in iteration ", it, " impossible with current estimates.
                         A calculated probability is smaller than 0. Try increasing prob_tol or using different initial intensity estimates.\n",
                            "Ignore message if it disappears after a few iterations."))
             nan_warning_issued <- TRUE

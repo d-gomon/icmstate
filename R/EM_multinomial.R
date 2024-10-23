@@ -315,12 +315,12 @@ EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, 
           #ptf is now P_{a_i *}(l_i, t) with t variable (rows) and * the states we can transition to (columns)
           denom <- ptf[nrow(ptf), bi+1] #Extract P_{ai, bi}(l_i, r_i)
           if(denom == 0 & !nan_warning_issued){
-            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " is impossible with current estimates.
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", unique_id[i], " in iteration ", it, " is impossible with current estimates.
                         An estimated probability was 0, whereas it shouldn't have been. Try increasing prob_tol or using different initial intensity estimates.\n", 
                            "Ignore message if it disappears after a few iterations."))
             nan_warning_issued <- TRUE
           } else if(denom < 0 & !nan_warning_issued){
-            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", i, " in iteration ", it, " impossible with current estimates.
+            warning(paste0("Transition ", ai, " to ", bi, " between times ", li, " and ", ri, " for subject ", unique_id[i], " in iteration ", it, " impossible with current estimates.
                         A calculated probability is smaller than 0. Try increasing prob_tol or using different initial intensity estimates.\n",
                            "Ignore message if it disappears after a few iterations."))
             nan_warning_issued <- TRUE
@@ -578,8 +578,9 @@ EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, 
       Y_g <- apply(Y[, , g], 2, sum)
       KKT_check <- any(sum_d > Y_g)
       if(is.na(KKT_check)){
-        stop("An observed transition has become impossible with the current estimates. 
-             This is likely due to a probability being set to 0. Try lowering 'prob_tol' to resolve the issue.")
+        warning(paste0("An observed transition has become impossible with the current estimates in iteration", it, 
+             "KKT check could not be performed and estimates may fall outside of feasible region in this iteration.", 
+             "This is likely due to a probability being set to 0. Ignore if warning disappears or try lowering 'prob_tol' to resolve the issue."))
       }
       if(KKT_check){
         KKT_violated <- KKT_violated + 1
@@ -588,7 +589,11 @@ EM_multinomial <- function(gd, tmat, tmat2, inits, beta_params, support_manual, 
           message("Estimates were adjusted to lie within the optimisation region.")  
         }
       }
-      mu_g[g, ] <- pmax(sum_d - Y_g, 0) #When smaller than 0, we are not violating the constraint in next iteration.
+      if(!is.na(KKT_check)){ #If we can adjust estimates do so
+        mu_g[g, ] <- pmax(sum_d - Y_g, 0) #When smaller than 0, we are not violating the constraint in next iteration.  
+      } else{ #Else just pretend everything is fine. It will be fine for sure, right???
+        mu_g[g, ] <- matrix(0, nrow = H, ncol = K)
+      }
     }
     
     if(final_step){
