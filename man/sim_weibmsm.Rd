@@ -96,7 +96,7 @@ a survival time from that state according to a Weibull intensity in a clock forw
 model, we can use the inverse transform of the conditional Weibull intensity.
 More specifically, letting \eqn{a}{a} denote the shape and \eqn{\sigma}{\sigma} denote the scale, 
 the conditional survival function for \eqn{t > s}{t > s} is given by
-\deqn{S(t|s) = \mathbb{P}(T \geq t | T \geq s) = \exp(\left( \frac{s}{\sigma} \right)^a - \left( \frac{t}{\sigma} \right)^a)}{S(t|s) = P(T >= t | T >= s) = exp((s/\sigma)^a - (t/\sigma)^a)}
+\deqn{S(t|s) = \mathbf{P}(T \geq t | T \geq s) = \exp(\left( \frac{s}{\sigma} \right)^a - \left( \frac{t}{\sigma} \right)^a)}{S(t|s) = P(T >= t | T >= s) = exp((s/\sigma)^a - (t/\sigma)^a)}
 The corresponding cumulative intensity is then given by:
 \deqn{A(t|s) = -\log(S(t|s)) = \left( \frac{t}{\sigma} \right)^a - \left( \frac{s}{\sigma} \right)^a}{A(t|s) = - log(S(t|s)) = (t/\sigma)^a - (s/\sigma)^a}
 And the inverse cumulative intensity is then:

@@ -184,7 +184,7 @@ Then this function can be used to estimate the transition intensities
 \eqn{\alpha_{gh}^k = \alpha_{gh}(\tau_k)}{alpha_(gh)^k = alpha_(gh)(tau_k)}. 
 
 Having obtained these estimated, it is possible to recover the transition probabilities 
-\eqn{\mathbb{P}(X(t) = h | X(s) = g)}{P(X(t) = h | X(s) = g)} for \eqn{t > s}{t > s} using 
+\eqn{\mathbf{P}(X(t) = h | X(s) = g)}{P(X(t) = h | X(s) = g)} for \eqn{t > s}{t > s} using 
 the \code{\link{transprob}} functions.
 }
 \examples{
