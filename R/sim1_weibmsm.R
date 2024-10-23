@@ -180,6 +180,7 @@ sim1_weibmsm <- function(obstimes, tmat, tmat2, startstate = 1, exact, shape, sc
 
       
       #Set current time to smallest possible transition time + appropriate state
+      #This way, if we don't have right-censoring, we don't have to change anything.
       previous_time <- current_time
       previous_state <- current_state
       current_time <- min_transition_time
@@ -199,7 +200,7 @@ sim1_weibmsm <- function(obstimes, tmat, tmat2, startstate = 1, exact, shape, sc
         }
       }
       
-      #Check if transition is observed exactly
+      #Check if transition is observed exactly and add extra observation time if so.
       if(!missing(exact) & !current_cens){
         trans_exactly_observed <- tmat2[min_transition_number, "to"] %in% exact
         if(trans_exactly_observed & min_transition_time <= max_obstime){
@@ -218,11 +219,12 @@ sim1_weibmsm <- function(obstimes, tmat, tmat2, startstate = 1, exact, shape, sc
     }
   }
   
-  
+  #Convert to matrix for faster processing.
   true_trajectory <- matrix(unlist(true_trajectory), ncol = length(true_trajectory),
                             dimnames = list(c(), names(true_trajectory)))
   
   #Get observed state from true trajectory
+  #Returns a vector with the state and censoring indicator.
   get_state <- function(obs_time, true_trajectory, cens_idx) {
     # Find the index of the closest time that is <= obs_time
     index <- findInterval(obs_time, true_trajectory[, "time"])
@@ -233,12 +235,13 @@ sim1_weibmsm <- function(obstimes, tmat, tmat2, startstate = 1, exact, shape, sc
   #Apply function to get observed states
   observed_states <- sapply(obstimes, get_state, true_trajectory = true_trajectory, cens_idx = cens_idx)
   #Transform into matrix to get data for output
+  #Columns: observation_times, observation_states, censoring indicator
   if(cens_idx){
     observed_trajectory <- cbind(obstimes, t(observed_states))
     colnames(observed_trajectory)[1] <- "time"
     first_cens_obs <- match(1, observed_trajectory[, "cens"])
     if(!is.na(first_cens_obs)){
-      observed_trajectory <- observed_trajectory[1:first_cens_obs, ]
+      observed_trajectory <- observed_trajectory[1:(first_cens_obs-1), , drop = FALSE]
     }
   } else{
     observed_trajectory <- cbind(obstimes, t(observed_states))

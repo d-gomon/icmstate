@@ -46,11 +46,12 @@ transition intensity for the corresponding transition in \code{tmat}. See
 \item{censshape}{A numeric vector of length H indicating the Weibull 
 censoring shape in each of the states. If no censoring is required in some states, 
 set corresponding entries to \code{NA}. If left missing, 
-no censoring is applied.}
+no censoring is applied. See details.}
 
 \item{censscale}{A numeric vector of length H indicating the Weibull censoring 
 scale in each of the states. If no censoring is required in some states, 
-set corresponding entries to \code{NA}. If left missing, no censoring is applied.}
+set corresponding entries to \code{NA}. If left missing, no censoring is applied.
+See details.}
 
 \item{n_subj}{(Optional) Instead of specifying \code{data}, specify the number 
 of subjects to generate trajectories for. Requires \code{obs_pars}  to
@@ -81,6 +82,15 @@ distributed transition intensities. Allows for Weibull censoring in each of
 the states.
 }
 \details{
+Taking \code{(cens)shape} to be 1 for all transitions, we obtain exponential 
+(censoring)/transitions with rate 1/\code{(cens)scale}.
+
+If right-censoring parameters are specified, a right-censoring time is generated in 
+each of the visited states. If the subject is right-censored, we assume the subject 
+is no longer observed at later \code{obstimes}. Due to the interval-censored 
+nature of the generation process, it may therefore appear as if the subject 
+was right-censored in an earlier state.
+
 Suppose a subject arrives in state g at time s. If we wish to generate 
 a survival time from that state according to a Weibull intensity in a clock forward 
 model, we can use the inverse transform of the conditional Weibull intensity.
@@ -97,8 +107,6 @@ with \eqn{U}{U} a sample from the standard uniform distribution.
 If we additionally have covariates (or frailties), the \eqn{-\log(U)}{-log(U)}
 above should be replaced by \eqn{\frac{-\log(U)}{\exp(\beta X)}}{(-log(U))/(exp(beta X))}
 with \eqn{\beta}{beta} and \eqn{X}{X} the coefficients and covariates respectively.
-Taking \code{censshape} to be 1 for all transitions, we obtain exponential 
-censoring with rate 1/\code{censscale}.
 }
 \examples{
 require(mstate)

@@ -1,4 +1,4 @@
-## ----include = FALSE----------------------------------------------------------
+## ---- include = FALSE---------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -76,6 +76,7 @@ tmat2_ID <- to.trans2(tmat_ID)
 dat_true <- data_ID$true
 
 ## -----------------------------------------------------------------------------
+opar <- par()
 par(mfrow = c(2,2))
 dat_surv <- reshape(dat_true, direction = "wide", idvar = "id", timevar = "state")
 dat_surv$status <- rep(1, nrow(dat_surv))
@@ -100,6 +101,7 @@ lines(second_trans$time, -pweibull(first_trans$time, shape_ID[2], scale_ID[2], l
 third_trans <- survfit(Surv(time.2, time.3, status) ~ 1, data = subset(dat_surv, !is.na(time.2)))
 plot(third_trans, fun = "cumhaz", xlim = c(0, 30), main = "Third transition")
 lines(third_trans$time, -pweibull(third_trans$time, shape_ID[3], scale_ID[3], lower = FALSE, log = TRUE), col = "red")
+par(opar)
 
 ## ----npmsmicdata--------------------------------------------------------------
 EM_fit <- npmsm(subset(data_ID$observed, id < 100), tmat = tmat_ID, tol = 1e-4, 
@@ -117,4 +119,5 @@ plot(probtrans_weib(tmat_ID, seq(0, 20, 0.01), shapes = shape_ID,
                     scales = scale_ID))
 #Plot estimated transition probabilities
 plot(transprob(EM_fit, predt = 0))
+par(opar)
 
