@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -76,7 +76,7 @@ tmat2_ID <- to.trans2(tmat_ID)
 dat_true <- data_ID$true
 
 ## -----------------------------------------------------------------------------
-opar <- par()
+opar <- par(no.readonly = TRUE)
 par(mfrow = c(2,2))
 dat_surv <- reshape(dat_true, direction = "wide", idvar = "id", timevar = "state")
 dat_surv$status <- rep(1, nrow(dat_surv))
