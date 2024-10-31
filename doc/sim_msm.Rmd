@@ -54,6 +54,7 @@ For more information, see `help(rweibull)`.
 
 ```{r setup}
 library(icmstate)
+set.seed(1)
 ```
 
 # Simulating data
@@ -237,7 +238,7 @@ dat_true <- data_ID$true
 
 We check whether the resulting curves from the fit correspond to the true values.
 
-```{r}
+```{r truevssimulatedtrajectories}
 opar <- par(no.readonly = TRUE)
 par(mfrow = c(2,2))
 dat_surv <- reshape(dat_true, direction = "wide", idvar = "id", timevar = "state")

@@ -6,6 +6,7 @@ knitr::opts_chunk$set(
 
 ## ----setup--------------------------------------------------------------------
 library(icmstate)
+set.seed(1)
 
 ## ----transmatID---------------------------------------------------------------
 library(mstate)
@@ -75,7 +76,7 @@ library(survival)
 tmat2_ID <- to.trans2(tmat_ID)
 dat_true <- data_ID$true
 
-## -----------------------------------------------------------------------------
+## ----truevssimulatedtrajectories----------------------------------------------
 opar <- par(no.readonly = TRUE)
 par(mfrow = c(2,2))
 dat_surv <- reshape(dat_true, direction = "wide", idvar = "id", timevar = "state")

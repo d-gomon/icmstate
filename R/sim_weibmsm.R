@@ -154,7 +154,8 @@ sim_weibmsm <- function(data, tmat, startprobs, exact, shape, scale,
     startprobs <- c(1, rep(0, H-1))  
   }
   
-  assertIntegerish(sum(startprobs), lower = 1, upper = 1, add = arg_checks)
+  assertIntegerish(sum(startprobs), lower = 1 - sqrt(.Machine$double.eps), 
+                   upper = 1 + sqrt(.Machine$double.eps), add = arg_checks)
   
   if(!missing(exact)){
     assertNumeric(exact, any.missing = FALSE, lower = 1, upper = H, min.len = 1,
