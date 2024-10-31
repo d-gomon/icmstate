@@ -22,6 +22,8 @@ coverage](https://codecov.io/gh/d-gomon/icmstate/graph/badge.svg)](https://app.c
 
 <!-- [![Biostatistics](https://img.shields.io/badge/Biostatistics-kxac041-%23003365)](https://doi.org/10.1093/biostatistics/kxac041) -->
 <!-- [![Codecov test coverage](https://codecov.io/gh/d-gomon/success/branch/main/graph/badge.svg)](https://codecov.io/gh/d-gomon/success?branch=main) -->
+
+[![R-CMD-check](https://github.com/d-gomon/icmstate/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/d-gomon/icmstate/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 # Interval-Censored Multi-STATE modelling (icmstate)
