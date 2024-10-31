@@ -200,7 +200,7 @@ For most users, it should suffice to choose the appropriate method as follows:
 
 
 
-# Key functions {Key-functions}
+# Key functions {#Key-functions}
 
 A short description of the key functions in this package is given in this section.
 
