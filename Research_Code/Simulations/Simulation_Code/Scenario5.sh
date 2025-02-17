@@ -34,17 +34,17 @@ sbatch --job-name="sc5n500obs6N500bin2" --export=scenario=5,n=500,n_obs=6,N=500,
 
 ## Poisson EM
 
-sbatch --job-name="sc5n100obs6N1000pois" --export=scenario=5,n=100,n_obs=6,N=1000,method="poisson",RNG=1 --time=2:00:00 \
+sbatch --job-name="sc5n100obs6N1000pois" --export=scenario=5,n=100,n_obs=6,N=1000,method="poisson",RNG=1 --time=3:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-short MSMsimulation.slurm
 
-sbatch --job-name="sc5n300obs6N1000pois" --export=scenario=5,n=300,n_obs=6,N=1000,method="poisson",RNG=1 --time=20:00:00 \
+sbatch --job-name="sc5n300obs6N1000pois" --export=scenario=5,n=300,n_obs=6,N=1000,method="poisson",RNG=1 --time=24:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
 
-sbatch --job-name="sc5n500obs6N500pois" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=1 --time=23:00:00 \
---ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
+sbatch --job-name="sc5n500obs6N500pois" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=1 --time=1-05:00:00 \
+--ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-long MSMsimulation.slurm
 
-sbatch --job-name="sc5n500obs6N500pois2" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=2 --time=23:00:00 \
---ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-medium MSMsimulation.slurm
+sbatch --job-name="sc5n500obs6N500pois2" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=2 --time=1-05:00:00 \
+--ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-long MSMsimulation.slurm
 
 
 
