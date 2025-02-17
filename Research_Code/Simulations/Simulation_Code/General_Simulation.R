@@ -35,6 +35,7 @@ RNG_seed <- as.numeric(args[6])
 # General Simulation Parameters
 #-------------------------------------------------------------------------
 C_admin <- 15
+censor_idx <- TRUE
 params <- list()
 params$method <- method
 
@@ -45,6 +46,19 @@ stop_time <- 15
 
 eval_times <- function(n_obs, stop_time){
   cumsum( c( 0,  runif( n_obs-1, 0, 2*(stop_time-4)/(n_obs-1) ) ) )
+}
+
+if(scenario == 5){
+  #For scenario 5, we consider observation times clustered around scheduled visit times
+  #Visits scheduled every 3 years, deviation from scheduled visit time of 0.1 years (~1.2 months)
+  #in any direction (uniformly generated)
+  eval_times <- function(n_obs, stop_time){
+    #n_obs and stop_time are unused, but given as arguments due to other scenarios
+    out <- seq(0, 15, by = 3)
+    out[2:6] <- out[2:6] + runif(5, -0.1, 0.1)
+    #Do not censor observations, not interested in this case.
+    out
+  }
 }
 
 
@@ -60,9 +74,11 @@ if(scenario != 4){
     }
     
     #Censor at appropriate time
-    which_censored <- which(gd[, "time"] > C_admin)
-    if(length(which_censored) > 0){
-      gd <- gd[-which_censored,]
+    if(censor_idx){
+      which_censored <- which(gd[, "time"] > C_admin)
+      if(length(which_censored) > 0){
+        gd <- gd[-which_censored,]
+      }  
     }
     return(gd)
   }
@@ -81,9 +97,11 @@ if(scenario != 4){
     
     sim.df <- data.frame(subject = rep(1:n, rep(n_obs, n)), 
                          time = c(replicate(n, eval_times(n_obs, stop_time = stop_time))))
-    which_censored <- which(sim.df$time > C_admin)
-    if(length(which_censored) > 0){
-      sim.df <- sim.df[-which_censored,]
+    if(censor_idx){
+      which_censored <- which(sim.df$time > C_admin)
+      if(length(which_censored) > 0){
+        sim.df <- sim.df[-which_censored,]
+      }  
     }
     sim.df <- sim.df[order(sim.df$subject, sim.df$time),]
     gd <- msm::simmulti.msm(data = sim.df, qmatrix = qmatrix, start = start_states, death = c(3,4))
@@ -170,6 +188,23 @@ if( scenario == 1){
   start_type <- "stable"
   exp_rates <- c(0.1, 0.05, 0.1)
   
+} else if( scenario == 5){
+  
+  qmatrix <- rbind(
+    c(-0.15, 0.1, 0.05),
+    c(0, -0.1, 0.1),
+    c(0, 0, 0)
+  )
+  tmat <- mstate::transMat(list(c(2, 3), c(3), c()))
+  params$tmat <- tmat
+  params$method <- method
+  
+  haz_type <- "hom"
+  start_type <- "equalprob"
+  exp_rates <- c(0.1, 0.05, 0.1)
+  
+  #No censoring in this scenario
+  censor_idx <- FALSE
 }
 
 
