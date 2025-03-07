@@ -43,7 +43,7 @@ sbatch --job-name="sc5n300obs6N1000pois" --export=scenario=5,n=300,n_obs=6,N=100
 sbatch --job-name="sc5n500obs6N500pois" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=1 --time=1-05:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-long MSMsimulation.slurm
 
-sbatch --job-name="sc5n500obs6N500pois2" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=2 --time=1-05:00:00 \
+sbatch --job-name="sc5n500obs6N500pois2" --export=scenario=5,n=500,n_obs=6,N=500,method="poisson",RNG=2 --time=1-15:00:00 \
 --ntasks=1 --cpus-per-task=12 --mem-per-cpu=10000M --partition=cpu-long MSMsimulation.slurm
 
 

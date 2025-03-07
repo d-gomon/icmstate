@@ -62,27 +62,10 @@ if(scenario == 5){
 }
 
 
-if(scenario != 4){
-  generate_gd <- function(haz_type = c("hom", "weib"), start_type = c("stable", "equalprob"), qmatrix = NULL, ...){
-    #Exponential hazard
-    if(haz_type == "hom"){
-      gd <- sim_id_weib(n = n, n_obs = n_obs, stop_time = stop_time, eval_times = eval_times,
-                        start_state = start_type, shape = c(1, 1, 1), scale = 1/exp_rates)
-    } else if(haz_type == "weib"){ #Weibull hazard
-      gd <- sim_id_weib(n = n, n_obs = n_obs, stop_time = stop_time, eval_times = eval_times,
-                        start_state = start_type, shape = w_shapes, scale = w_scales)
-    }
-    
-    #Censor at appropriate time
-    if(censor_idx){
-      which_censored <- which(gd[, "time"] > C_admin)
-      if(length(which_censored) > 0){
-        gd <- gd[-which_censored,]
-      }  
-    }
-    return(gd)
-  }
-} else{
+#For scenario 4, we need to generate data for an extended illness-death model,
+#which is not implemented in sim_id_weib, so we use the msm pkgs simmulti.msm function
+#although we could have used sim_weibmsm instead (not available when initially simulating).
+if (scenario == 4){
   generate_gd <- function(haz_type = c("hom", "weib"), start_type = c("stable", "equalprob"), qmatrix = NULL, ...){
     if(start_type == "stable"){
       start_states <- rep(1, n)
@@ -110,7 +93,27 @@ if(scenario != 4){
     
     return(gd)
   }
-}
+} else{
+  generate_gd <- function(haz_type = c("hom", "weib"), start_type = c("stable", "equalprob"), qmatrix = NULL, ...){
+    #Exponential hazard
+    if(haz_type == "hom"){
+      gd <- sim_id_weib(n = n, n_obs = n_obs, stop_time = stop_time, eval_times = eval_times,
+                        start_state = start_type, shape = c(1, 1, 1), scale = 1/exp_rates)
+    } else if(haz_type == "weib"){ #Weibull hazard
+      gd <- sim_id_weib(n = n, n_obs = n_obs, stop_time = stop_time, eval_times = eval_times,
+                        start_state = start_type, shape = w_shapes, scale = w_scales)
+    }
+    
+    #Censor at appropriate time
+    if(censor_idx){
+      which_censored <- which(gd[, "time"] > C_admin)
+      if(length(which_censored) > 0){
+        gd <- gd[-which_censored,]
+      }  
+    }
+    return(gd)
+  }
+} 
 
 
 
@@ -205,6 +208,21 @@ if( scenario == 1){
   
   #No censoring in this scenario
   censor_idx <- FALSE
+} else if( scenario == 6){
+  
+  qmatrix <- rbind(
+    c(-0.15, 0.1, 0.05),
+    c(0, -0.1, 0.1),
+    c(0, 0, 0)
+  )
+  tmat <- mstate::transMat(list(c(2, 3), c(3), c()))
+  params$tmat <- tmat
+  params$method <- method
+  
+  haz_type <- "hom"
+  start_type <- "equalprob"
+  exp_rates <- c(0.1, 0.05, 0.1)
+  
 }
 
 
@@ -213,9 +231,10 @@ if( scenario == 1){
 # Run models
 #-------------------------------------------------------------------------
 
-out.name <- paste0("sc", scenario, "n", n, "obs", n_obs, "N", N, method, "RNG", RNG_seed)
+out.name <- paste0("sc", scenario, "n", n, "obs", n_obs, "N", N, method)
+out.filename <- paste0("sc", scenario, "n", n, "obs", n_obs, "N", N, method, "RNG", RNG_seed)
 
-cl <- makeCluster(n.cores, outfile = paste0(out.name, ".txt"))
+cl <- makeCluster(n.cores, outfile = paste0(out.filename, ".txt"))
 registerDoParallel(cl)
 out <-  foreach(i = 1:N, .packages = c("icmstate", "msm"),
                 .options.RNG = RNG_seed) %dorng% {
@@ -255,7 +274,7 @@ stopCluster(cl)
 
 assign(out.name, out)
 
-save(list = out.name, file = paste0(out.name, ".Rdata"))
+save(list = out.name, file = paste0(out.filename, ".Rdata"))
 
 
 

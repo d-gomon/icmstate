@@ -14,11 +14,11 @@ knitr::opts_chunk$set(echo = TRUE)
 # Scenario information - Adjust here to get appropriate output.
 
 ```{r}
-scenario <- 4 #Choose from 1:4
-n <- c(100, 300, 500) #Remove one if no files
-n_obs <- c(6) #At most c(3,6)
+scenario <- 6 #Choose from 1:6
+n <- c(500) #Remove one if no files
+n_obs <- c(4, 10) #At most c(3,6)
 N <- 1000
-methods <- c("binomial", "msm")
+methods <- c("multinomial", "poisson", "msm") #
 
 eval_times <- seq(0, 15, 0.1)
 w_shapes <- c(0.5, 0.5, 2)
@@ -36,7 +36,7 @@ names_load <- c()
 var_names <- c()
 for(i in 1:nrow(load_names)){
   x <- load_names[i,]
-  names_load <- c(names_load, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5], ".Rdata"))
+  names_load <- c(names_load, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5], "RNG1", ".Rdata"))
   var_names <- c(var_names, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5]))
 }
 ```
@@ -49,7 +49,6 @@ for(i in 1:nrow(load_names)){
 for(i in 1:length(names_load)){
   load(names_load[i])
 }
-methods <- c("multinomial", "msm")
 ```
 
 
@@ -318,26 +317,26 @@ for(i in 1:nrow(load_names)){
 Compare the statistics as n increases within methods.
 
 ```{r fig.keep='all'}
-trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 4.Death (aI)")
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
-method_names <- c("Multinomial EM", "Homogeneous")
-names(method_names) <- c("multinomial", "msm")
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous") #
+names(method_names) <- c("multinomial", "poisson", "msm") #
 
 
 for(i in 1:length(methods)){
   stat_multiple <- NULL
-  for(j in 1:length(n)){
-    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df", (i-1)*length(n)+j)))
+  for(j in 1:length(n_obs)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df", (i-1)*length(n_obs)+j)))
   }
-  stat_multiple <- cbind(stat_multiple, c(rep(n, each = length(eval_times) * 9)))
-  colnames(stat_multiple)[5] <- "n"
-  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n), col = as.factor(n), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = paste0("Cumulative Intensities"), subtitle = paste0("Scenario ", scenario, ", ", method_names[i]), color = "Sample size", linetype = "Measure") + scale_color_brewer(palette="Dark2")
+  stat_multiple <- cbind(stat_multiple, c(rep(n_obs, each = length(eval_times) * 9)))
+  colnames(stat_multiple)[5] <- "n_obs"
+  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n_obs), col = as.factor(n_obs), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = paste0("Cumulative Intensities"), subtitle = paste0("Scenario ", scenario, ", ", method_names[i]), color = "# Observations", linetype = "Measure") + scale_color_brewer(palette="Dark2") + xlim(c(0, 12)) + ylim(c(-0.1, 0.2))
   print(plot_all_stat)
   assign(paste0("plot_all_statn", i), plot_all_stat)
 }
 
-all_stat_plotn <- ggarrange(plot_all_statn1, plot_all_statn2,
-          labels = c("A", "B"),
+all_stat_plotn <- ggarrange(plot_all_statn1, plot_all_statn2, plot_all_statn3, 
+          labels = c("A", "B", "C"),
           ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
 
 
@@ -348,13 +347,11 @@ ggsave(file = paste0("Scenario", scenario, "gg_compint.eps"), plot = all_stat_pl
 Compare between methods for fixed n.
 
 
-```{r}
-trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 4.Death (aI)")
+```{r eval = FALSE}
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
-method_names <- c("Multinomial EM", "Homogeneous")
-names(method_names) <- c("multinomial", "msm")
-method_colors <- c("#1B9E77", "#7570B3", "#D95F02")
-names(method_colors) <- c("multinomial", "poisson", "msm")
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 for(i in 1:length(n)){
@@ -364,7 +361,7 @@ for(i in 1:length(n)){
   }
   stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * 9)))
   colnames(stat_multiple)[5] <- "Method"
-  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Cumulative Intensities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_manual(labels = method_names, values = method_colors) #+ scale_color_brewer(palette="Dark2", labels = method_names)
+  plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Cumulative Intensities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names)
   print(plot_all_stat)
   assign(paste0("plot_all_stat", i), plot_all_stat)
 }
@@ -390,26 +387,26 @@ Compare the statistics as n increases within methods.
 
 ```{r fig.keep='all'}
 
-trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death", "1.Alive -> 4.Death (aI)")
-names(trans_names) <- c(1, 2, 3, 4)
-method_names <- c("Multinomial EM", "Homogeneous")
-names(method_names) <- c("multinomial", "msm")
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")#
+names(method_names) <- c("multinomial", "poisson", "msm")#
 
 for(i in 1:length(methods)){
   stat_multiple <- NULL
-  for(j in 1:length(n)){
-    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df_pt", (i-1)*length(n)+j)))
+  for(j in 1:length(n_obs)){
+    stat_multiple <- rbind(stat_multiple, get(paste0("stat_df_pt", (i-1)*length(n_obs)+j)))
   }
-  stat_multiple <- cbind(stat_multiple, c(rep(n, each = length(eval_times) * n_states * length(n))))
-  colnames(stat_multiple)[5] <- "n"
-  plot_all_stat_ptn <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n), col = as.factor(n), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", ", method_names[i]), color = "Sample size", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
+  stat_multiple <- cbind(stat_multiple, c(rep(n_obs, each = length(eval_times) * 9)))
+  colnames(stat_multiple)[5] <- "n_obs"
+  plot_all_stat_ptn <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, n_obs), col = as.factor(n_obs), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", ", method_names[i]), color = "# Observations", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) + xlim(c(0, 12)) + ylim(c(-0.02, 0.07))
   print(plot_all_stat_ptn)
   assign(paste0("plot_all_stat_ptn", i), plot_all_stat_ptn)
 }
 
-all_stat_plot_ptn <- ggarrange(plot_all_stat_ptn1, plot_all_stat_ptn2,
-          labels = c("A", "B"),
-          ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+all_stat_plot_ptn <- ggarrange(plot_all_stat_ptn1, plot_all_stat_ptn2, plot_all_stat_ptn3, 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
 
 ggsave(file = paste0("Scenario", scenario, "gg_compprobs.eps"), plot = all_stat_plot_ptn, width = 5.5, height = 3, units = "in", scale = 1.7)
 ```
@@ -417,13 +414,11 @@ ggsave(file = paste0("Scenario", scenario, "gg_compprobs.eps"), plot = all_stat_
 Compare between methods for fixed n.
 
 
-```{r}
-trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death", "1.Alive -> 4.Death (aI)")
-names(trans_names) <- c(1, 2, 3, 4)
-method_names <- c("Multinomial EM",  "Homogeneous")
-names(method_names) <- c("multinomial",  "msm")
-method_colors <- c("#1B9E77", "#7570B3", "#D95F02")
-names(method_colors) <- c("multinomial", "poisson", "msm")
+```{r eval =FALSE}
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 
@@ -434,7 +429,7 @@ for(i in 1:length(n)){
   }
   stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * n_states * 3)))
   colnames(stat_multiple)[5] <- "Method"
-  plot_all_stat_pt <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_manual(labels = method_names, values = method_colors) #+ scale_color_brewer(palette="Dark2", labels = method_names) 
+  plot_all_stat_pt <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
   print(plot_all_stat_pt)
   assign(paste0("plot_all_stat_pt", i), plot_all_stat_pt)
 }
@@ -458,9 +453,9 @@ ggsave(file = paste0("Scenario", scenario, "gg_probs.eps"), plot = all_stat_plot
 
 for n = 500, plot cumulative intensities and transition probabilities
 
-```{r eval = FALSE}
-trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death", "1.Alive -> 4.Death (aI)")
-names(trans_names) <- c(1, 2, 3, 4)
+```{r}
+trans_names <- c("1.Alive -> 1.Alive", "1.Alive -> 2.Illness", "1.Alive -> 3.Death")
+names(trans_names) <- c(1, 2, 3)
 method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
 names(method_names) <- c("multinomial", "poisson", "msm")
 
@@ -479,10 +474,10 @@ comb_plot <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = inter
 
 
 
-trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 4.Death (aI)")
+trans_names <- c("1.Alive -> 2.Illness", "1.Alive -> 3.Death", "2.Illness -> 3.Death")
 names(trans_names) <- c(1, 2, 3)
-method_names <- c("Multinomial EM", "Homogeneous")
-names(method_names) <- c("multinomial", "msm")
+method_names <- c("Multinomial EM", "Poisson EM", "Homogeneous")
+names(method_names) <- c("multinomial", "poisson", "msm")
 
 
 
