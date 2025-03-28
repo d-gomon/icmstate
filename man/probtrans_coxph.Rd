@@ -106,6 +106,8 @@ if(require("mstate")){
               
   
   #We need to make a data.frame containing all subjects of interest
+  ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
+  names(ttmat)[3] <- "trans"
   nd_n <- NULL
   for (j in 1:n) {
     # Select global covariates of subject j

@@ -97,6 +97,8 @@
 #'               
 #'   
 #'   #We need to make a data.frame containing all subjects of interest
+#'   ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
+#'   names(ttmat)[3] <- "trans"
 #'   nd_n <- NULL
 #'   for (j in 1:n) {
 #'     # Select global covariates of subject j
@@ -162,7 +164,7 @@ probtrans_coxph <- function(object, predt,
     stop("Prediction time must be a positive numeric value.")
   }
   
-  if(!inherits(tmat, "matrix")){
+  if(!inherits(trans, "matrix")){
     stop("trans must be a transition matrix (array).")
   }
   
@@ -240,10 +242,13 @@ probtrans_coxph <- function(object, predt,
 
 
 
-#' 
+#' Recover baseline intensities (in the form of intensity_matrices) from a 
+#' coxph() fit on multi-state data.
 #' 
 #' 
 #' @importFrom mstate msfit to.trans2
+#' @import survival
+#' @importFrom stats formula
 #' 
 #' @keywords internal
 
@@ -289,7 +294,8 @@ baseline_intensities_from_coxmod <- function(object, tmat){
 
 
 
-#' 
+#' Expand covariates for a data frame so that covariates can be transition 
+#' specific.
 #' 
 #' @keywords internal
 
@@ -309,8 +315,14 @@ expand_covariates_long_data <- function(newdata){
 
 
 
+#' Calculate subject specific risks for subjects in newdata
 #' 
+#' @description Return a 2 dimensional array, with subjects in the first dimension and
+#' transition (numbers) in the second. Can expand later to include time-dependent
+#' covariates by introducing extra dimension. Entries of the matrix are exp(lp)_i^m,
+#' with i denoting the subject and m the transition.
 #' 
+#' @import survival
 #' 
 #' @keywords internal
 #' 
@@ -373,6 +385,12 @@ trans_specific_risks <- function(object, newdata, trans){
 }
 
 
+#' Calculate the subject specific intensity matrices
+#' 
+#' @description
+#' For each subject, calculate a 3D array containing the states (from, to) in the
+#' first two dimension and the times in the third.
+#' This is then stored in a 4D array, with the 4th dimension indicating each unique subject.
 #' 
 #' 
 #' 

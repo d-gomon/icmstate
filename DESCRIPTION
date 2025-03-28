@@ -20,13 +20,13 @@ Imports:
     checkmate,
     ggplot2,
     deSolve,
-    msm
+    msm,
+    survival
 LinkingTo: Rcpp
 Suggests: 
     testthat (>= 3.0.0),
     icenReg,
     profvis,
-    survival,
     knitr,
     rmarkdown,
     bookdown,

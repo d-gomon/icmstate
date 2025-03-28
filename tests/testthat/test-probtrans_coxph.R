@@ -151,7 +151,7 @@ test_that("Do we recover the same transition probabilities as msfit + probtrans?
     nd$strata <- c(1, 2, 2)
     msfj <- msfit(c2, newdata = nd, trans = tmat)
     ptj <- probtrans(msfj, predt = 0, variance = FALSE)
-    sptj <- summary(ptj, times=6)
+    sptj <- suppressWarnings(summary(ptj, times=6))
     p12_6[j] <- sptj[[1]]$pstate2
   }
   
