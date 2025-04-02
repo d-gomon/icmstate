@@ -109,18 +109,18 @@ if(require("mstate")){
   ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
   names(ttmat)[3] <- "trans"
   nd_n <- NULL
-  for (j in 1:n) {
+  for (j in 1:30) {
     # Select global covariates of subject j
     cllj <- ebmt3[j, covs]
     nd2 <- cbind(ttmat, rep(j, 3), rbind(cllj, cllj, cllj))
     colnames(nd2)[4] <- "id"
-    # Make nd of class msdata to use expand.covs
+    # Make nd2 of class msdata to use expand.covs
     attr(nd2, "trans") <- tmat
     class(nd2) <- c("msdata", "data.frame")
     nd2 <- expand.covs(nd2, covs=covs, longnames = FALSE)
-    nd2$drmatch.2.3 <- nd$drmatch.2 + nd$drmatch.3
+    nd2$drmatch.2.3 <- nd2$drmatch.2 + nd2$drmatch.3
     nd2$pr <- 0
-    nd2$pr[nd$trans==3] <- 1
+    nd2$pr[nd2$trans==3] <- 1
     nd2$strata <- c(1, 2, 2)
     nd_n <- rbind(nd_n, nd2)
    }

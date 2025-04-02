@@ -190,3 +190,71 @@ test_that("Do we recover the same transition probabilities as msfit + probtrans?
 
 
 
+test_that("profvis", {
+  #Code that should not run for testing.
+  skip_if(TRUE)
+  library(profvis)
+  
+  #Let us store P_{12}(6) for the first 30 subjects in ebmt3
+  #Using cox model 2 & 4
+  n <- 100
+  
+  #Using msfit and probtrans from mstate pkg
+  #We need to make predictions for each person separately.
+  ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
+  names(ttmat)[3] <- "trans"
+  p12_6 <- rep(NA, n)
+  for (j in 1:n) {
+    # Select global covariates of subject j
+    cllj <- ebmt3[j, covs]
+    nd <- cbind(ttmat, rbind(cllj, cllj, cllj))
+    # Make nd of class msdata to use expand.covs
+    attr(nd, "trans") <- tmat
+    class(nd) <- c("msdata", "data.frame")
+    nd <- expand.covs(nd, covs=covs, longnames = FALSE)
+    nd$drmatch.2.3 <- nd$drmatch.2 + nd$drmatch.3
+    nd$pr <- 0
+    nd$pr[nd$trans==3] <- 1
+    nd$strata <- c(1, 2, 2)
+    msfj <- msfit(c2, newdata = nd, trans = tmat)
+    ptj <- probtrans(msfj, predt = 0, variance = FALSE)
+    sptj <- suppressWarnings(summary(ptj, times=6))
+    p12_6[j] <- sptj[[1]]$pstate2
+  }
+  
+  
+  #Using probtrans_coxph()
+  
+  #We need to make a data.frame containing all subjects of interest
+  nd_n <- NULL
+  for (j in 1:300) {
+    # Select global covariates of subject j
+    cllj <- ebmt3[j, covs]
+    nd2 <- cbind(ttmat, rep(j, 3), rbind(cllj, cllj, cllj))
+    colnames(nd2)[4] <- "id"
+    # Make nd of class msdata to use expand.covs
+    attr(nd2, "trans") <- tmat
+    class(nd2) <- c("msdata", "data.frame")
+    nd2 <- expand.covs(nd2, covs=covs, longnames = FALSE)
+    nd2$drmatch.2.3 <- nd$drmatch.2 + nd$drmatch.3
+    nd2$pr <- 0
+    nd2$pr[nd$trans==3] <- 1
+    nd2$strata <- c(1, 2, 2)
+    nd_n <- rbind(nd_n, nd2)
+  }
+  
+  profvis_pt <- profvis({probtrans_coxph(c2, predt = 0, direction = "forward", 
+                                          newdata = nd_n, trans = tmat)})
+  profvis_pt2 <- profvis({probtrans_coxph2(c2, predt = 0, direction = "forward", 
+                                          newdata = nd_n, trans = tmat)})
+  
+  icmstate_pt <- probtrans_coxph(c2, predt = 0, direction = "forward", 
+                                         newdata = nd_n, trans = tmat)
+  icmstate_pt2 <- probtrans_coxph2(c2, predt = 0, direction = "forward", 
+                                           newdata = nd_n, trans = tmat)
+  
+})
+
+
+
+

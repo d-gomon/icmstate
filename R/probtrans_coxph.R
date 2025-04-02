@@ -38,6 +38,7 @@
 #' subject.
 #' 
 #' 
+#' @importFrom stats terms
 #' 
 #' @export
 #' 
@@ -100,18 +101,18 @@
 #'   ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
 #'   names(ttmat)[3] <- "trans"
 #'   nd_n <- NULL
-#'   for (j in 1:n) {
+#'   for (j in 1:30) {
 #'     # Select global covariates of subject j
 #'     cllj <- ebmt3[j, covs]
 #'     nd2 <- cbind(ttmat, rep(j, 3), rbind(cllj, cllj, cllj))
 #'     colnames(nd2)[4] <- "id"
-#'     # Make nd of class msdata to use expand.covs
+#'     # Make nd2 of class msdata to use expand.covs
 #'     attr(nd2, "trans") <- tmat
 #'     class(nd2) <- c("msdata", "data.frame")
 #'     nd2 <- expand.covs(nd2, covs=covs, longnames = FALSE)
-#'     nd2$drmatch.2.3 <- nd$drmatch.2 + nd$drmatch.3
+#'     nd2$drmatch.2.3 <- nd2$drmatch.2 + nd2$drmatch.3
 #'     nd2$pr <- 0
-#'     nd2$pr[nd$trans==3] <- 1
+#'     nd2$pr[nd2$trans==3] <- 1
 #'     nd2$strata <- c(1, 2, 2)
 #'     nd_n <- rbind(nd_n, nd2)
 #'    }
@@ -237,6 +238,130 @@ probtrans_coxph <- function(object, predt,
 }
 
 
+#' Second (hopefully faster) version of probtrans coxph
+#' 
+#' 
+#' @keywords internal
+#' 
+#' 
+#' 
+#' 
+
+probtrans_coxph2 <- function(object, predt, 
+                            direction = c("forward", "fixedhorizon"),
+                            newdata, trans){
+  #Given:
+  #object: coxph model fitted for MSM data
+  #newdata: data.frame containing the variables for new subjects to make predictions
+  #on, must contain all variables in object
+  #trans: a transition matrix 
+  
+  
+  #---------------DATA CHECKS----------------#
+  
+  #We first copy some checks from msfit, which are actually from survfit
+  #Here we make sure that the cox fit is appropriate, and extract the 
+  #correct terms for each transition.
+  
+  #Some checks on coxmod
+  if(!is.null((object$call)$weights) || !is.null(object$weights))
+    stop("msfit cannot (yet) compute the result for a weighted model")
+  Terms <- terms(object)
+  strat <- attr(Terms, "specials")$strata
+  if (is.null(strat)) stop("object has to have strata() term")
+  cluster <- attr(Terms, "specials")$cluster
+  if (length(cluster)) stop("cluster terms are not supported")
+  if (!is.null(attr(object$terms, "specials")$tt))
+    stop("msfit cannot yet process coxph models with a tt term")
+  
+  
+  direction <- match.arg(direction, choices = c("forward", "fixedhorizon"))
+  
+  if(!(predt >= 0) | !(is.numeric(predt))){
+    stop("Prediction time must be a positive numeric value.")
+  }
+  
+  if(!inherits(trans, "matrix")){
+    stop("trans must be a transition matrix (array).")
+  }
+  
+  if(!is.data.frame(newdata)){
+    stop("newdata must be a data frame containing columns id, from, to transno, strata")
+  }
+  
+  
+  #----------Step 1: Baseline intensities-------------#
+  #Recover baseline intensities from cox model
+  #Output from get_intensity matrices
+  #List with $intensity_matrices and $unique_times
+  #print("Step 1")
+  baseline_intensities <- baseline_intensities_from_coxmod(object, trans)
+  
+  
+  #---------Step 2: Subject specific risks-------------#
+  
+  #####Step 2.1: Transform data we have into data which has all 
+  #the necessary variables######
+  
+  #Next we want to transform newdata into a format which contains all 
+  #the variables we have in the coxph object.
+  
+  #newdata <- expand_covariates_long_data(newdata)
+  
+  #TODOTODOTODO - for now newdata simply contains all necessary variables, 
+  #and is in long format, with 1 line per possible transition for each subject!
+  #If we don't have a line for each transition, we may miss some covariates
+  #which were included for proportionality (see rel.3)
+  
+  #####Step 2.2: Extract the subject specific risk from the transformed data#####
+  #print("Step 2")
+  subject_specific_risks <- trans_specific_risks(object = object, newdata = newdata,
+                                                 trans = trans)
+  
+  
+  
+  #--------Steps 3 & 4: Calculate intensity matrices and transition probabilities per subject------#
+  
+  #For each subject, determine their intensity matrices for all unique times.
+  #Then simply use probtrans for each subject separately.
+  
+  n_subjects <- nrow(subject_specific_risks)
+  n_transitions <- ncol(subject_specific_risks)
+  n_times <- length(baseline_intensities$unique_times)
+  
+  #Calculate a baseline intensity matrix with zero diagonals
+  #We can use this one to calculate the off-diagonal elements 
+  #and then calculate the diagonal elements for that specific subject
+  intensity_matrices_zero_diag <- baseline_intensities$intensity_matrices
+  for(k in 1:n_times){
+    diag(intensity_matrices_zero_diag[, , k]) <- 0
+  }
+  
+  #pre-specify output (list of length n_subjects)
+  res <- vector(mode = "list", length = n_subjects)
+  
+  for(i in 1:n_subjects){
+    #subject_specific_intensity_matrix returns a 3D array containing the
+    #intensity matrices for the current subject.
+    subject_specific_intensity_matrix <- subject_specific_intensity_matrix(subject_specific_risk = subject_specific_risks[i,],
+                                                                           intensity_matrices_zero_diag = intensity_matrices_zero_diag,
+                                                                           trans = trans, n_transitions = n_transitions,
+                                                                           n_times = n_times)
+    res[[i]] <- probtrans_D(list(intensity_matrices = subject_specific_intensity_matrix,
+                                 unique_times = baseline_intensities$unique_times), 
+                            predt = predt, direction = direction, as.df = TRUE)
+    class(res[[i]]) <- "probtrans"
+    res[[i]]$trans <- trans
+    res[[i]]$method <- "aalen"
+    res[[i]]$predt <- predt
+    res[[i]]$direction <- direction
+  }
+  
+  
+  #-----------OUTPUT------------#
+  return(res)
+}
+
 
 
 
@@ -248,7 +373,7 @@ probtrans_coxph <- function(object, predt,
 #' 
 #' @importFrom mstate msfit to.trans2
 #' @import survival
-#' @importFrom stats formula
+#' @importFrom stats formula model.frame as.formula predict
 #' 
 #' @keywords internal
 
@@ -431,6 +556,43 @@ subject_specific_intensity_matrices <- function(subject_specific_risks, baseline
   
   out <- list(subject_intensity_matrices = subject_intensity_matrices,
               unique_times = baseline_intensities$unique_times)
+  
+  return(out)
+  
+}
+
+
+#' Determine subject specific intensity matrix for a single subject
+#'
+#' @keywords internal
+#'
+#' @importFrom mstate to.trans2
+#'
+#'
+
+
+subject_specific_intensity_matrix <- function(subject_specific_risk, 
+                                              intensity_matrices_zero_diag, trans,
+                                              n_transitions, n_times){
+  #Given subject specific risks, we want to obtain the intensity matrices for each subject
+  
+  
+  tmat2 <- to.trans2(trans)
+  
+  #Initialize output to be the baseline intensities with zero diagonals
+  subject_intensity_matrix <- intensity_matrices_zero_diag
+  
+  
+  for(m in 1:n_transitions){
+    from <- tmat2$from[m]
+    to <- tmat2$to[m]
+    subject_intensity_matrix[from, to, ] <- subject_intensity_matrix[from, to, ] * subject_specific_risk[m]
+  }
+  for(k in 1:n_times){
+    diag(subject_intensity_matrix[, , k]) <- 1 - rowSums(subject_intensity_matrix[, , k])
+  }
+  
+  out <- subject_intensity_matrix
   
   return(out)
   
