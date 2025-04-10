@@ -38,7 +38,8 @@
 #' an object of class \code{\link[mstate:probtrans]{probtrans}} for the associated 
 #' subject. List elements can be accessed using \code{[[x]]}, with \code{x} 
 #' ranging from 1 to n. Additionally, each list element 
-#' has an additional element \code{$id}, representing the subject id.
+#' has an element \code{$id}, representing the subject id and the output object 
+#' also has an element \code{$subject_ids} representing the subject ids in order.
 #' 
 #' @details
 #' When using this function for \code{newdata} with many subjects, consider running the 
@@ -182,6 +183,16 @@ probtrans_coxph <- function(object, predt,
   }
   
   
+  #Keep track of subject ids.
+  if("id" %in% colnames(newdata)){
+    subject_ids <- unique(newdata[, "id"])
+    n_subjects <- length(subject_ids)
+  } else{
+    subject_ids <- 1
+    n_subjects <- 1
+  }
+  
+  
   #----------Step 1: Baseline intensities-------------#
   #Recover baseline intensities from cox model
   #Output from get_intensity matrices
@@ -226,9 +237,11 @@ probtrans_coxph <- function(object, predt,
   #This step is relatively easy. We simply use probtrans for each subject separately.
   #print("Step 4")
   
-  n_subjects <- dim(subject_specific_intensity_matrices$subject_intensity_matrices)[4]
+  
+  #We now determine n_subjects and subject_ids in the beginning of this function.
+  #n_subjects <- dim(subject_specific_intensity_matrices$subject_intensity_matrices)[4]
   #Note that subject_ids will now have class "character", as it was transformed to a name before
-  subject_ids <- dimnames(subject_specific_intensity_matrices$subject_intensity_matrices)[[4]]
+  #subject_ids <- dimnames(subject_specific_intensity_matrices$subject_intensity_matrices)[[4]]
   res <- vector(mode = "list", length = n_subjects)
   for(i in 1:n_subjects){
     res[[i]] <- probtrans_D(list(intensity_matrices = subject_specific_intensity_matrices$subject_intensity_matrices[, , , i],
@@ -241,7 +254,7 @@ probtrans_coxph <- function(object, predt,
     res[[i]]$direction <- direction
     res[[i]]$id <- subject_ids[i]
   }
-  
+  res$subject_ids <- subject_ids
   class(res) <- "probtrans.subjects"
   #-----------OUTPUT------------#
   return(res)

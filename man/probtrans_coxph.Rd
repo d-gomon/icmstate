@@ -49,7 +49,8 @@ This is a list of length n (number of subjects in newdata), with each list eleme
 an object of class \code{\link[mstate:probtrans]{probtrans}} for the associated 
 subject. List elements can be accessed using \code{[[x]]}, with \code{x} 
 ranging from 1 to n. Additionally, each list element 
-has an additional element \code{$id}, representing the subject id.
+has an element \code{$id}, representing the subject id and the output object 
+also has an element \code{$subject_ids} representing the subject ids in order.
 }
 \description{
 Given a coxph model fit on multi-state data (prepared with \code{\link[mstate:msprep]{msprep}}),
