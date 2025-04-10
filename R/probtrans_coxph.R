@@ -33,9 +33,17 @@
 #' 
 #' 
 #' 
-#' @return A list of length n (number of subjects in newdata), with each list component
+#' @return An object of class \code{"probtrans.subjects"}.
+#' This is a list of length n (number of subjects in newdata), with each list element
 #' an object of class \code{\link[mstate:probtrans]{probtrans}} for the associated 
-#' subject.
+#' subject. List elements can be accessed using \code{[[x]]}, with \code{x} 
+#' ranging from 1 to n. Additionally, each list element 
+#' has an additional element \code{$id}, representing the subject id.
+#' 
+#' @details
+#' When using this function for \code{newdata} with many subjects, consider running the 
+#' function multiple times for parts of \code{newdata} to negate the risk of 
+#' running our of memory.
 #' 
 #' 
 #' @importFrom stats terms
@@ -47,7 +55,7 @@
 #' @examples
 #' #Example from the mstate vignette
 #' #We determine the subject specific transition probabilities for subjects
-#' #in the ebmt3 data-set using only mstate functionality and using probtrans_coxph
+#' #in the ebmt3 data-set 
 #' if(require("mstate")){
 #'   data(ebmt3)
 #'   n <- nrow(ebmt3)
@@ -192,10 +200,8 @@ probtrans_coxph <- function(object, predt,
   
   #newdata <- expand_covariates_long_data(newdata)
   
-  #TODOTODOTODO - for now newdata simply contains all necessary variables, 
-  #and is in long format, with 1 line per possible transition for each subject!
-  #If we don't have a line for each transition, we may miss some covariates
-  #which were included for proportionality (see rel.3)
+  #Decided not to do this step, as this restricts the possible models which 
+  #can be fit considerably.
   
   #####Step 2.2: Extract the subject specific risk from the transformed data#####
   #print("Step 2")
@@ -219,7 +225,10 @@ probtrans_coxph <- function(object, predt,
   
   #This step is relatively easy. We simply use probtrans for each subject separately.
   #print("Step 4")
+  
   n_subjects <- dim(subject_specific_intensity_matrices$subject_intensity_matrices)[4]
+  #Note that subject_ids will now have class "character", as it was transformed to a name before
+  subject_ids <- dimnames(subject_specific_intensity_matrices$subject_intensity_matrices)[[4]]
   res <- vector(mode = "list", length = n_subjects)
   for(i in 1:n_subjects){
     res[[i]] <- probtrans_D(list(intensity_matrices = subject_specific_intensity_matrices$subject_intensity_matrices[, , , i],
@@ -230,9 +239,10 @@ probtrans_coxph <- function(object, predt,
     res[[i]]$method <- "aalen"
     res[[i]]$predt <- predt
     res[[i]]$direction <- direction
+    res[[i]]$id <- subject_ids[i]
   }
   
-  
+  class(res) <- "probtrans.subjects"
   #-----------OUTPUT------------#
   return(res)
 }
@@ -240,9 +250,16 @@ probtrans_coxph <- function(object, predt,
 
 #' Second (hopefully faster) version of probtrans coxph
 #' 
+#' @description
+#' Currently not faster than probtrans_coxph()
+#' However, this function no longer stores the intensity matrices
+#' for each subject in a 3D array, instead overwriting a single 2D matrix
+#' with the values for a different subject iteratively. Unfortunately, due to
+#' how R manages memory this does not lead to a speed/memory improvement.
+#' 
 #' 
 #' @keywords internal
-#' 
+#' @noRd
 #' 
 #' 
 #' 
@@ -370,6 +387,8 @@ probtrans_coxph2 <- function(object, predt,
 #' Recover baseline intensities (in the form of intensity_matrices) from a 
 #' coxph() fit on multi-state data.
 #' 
+#' @inherit probtrans_coxph params
+#' @param tmat A transition matrix as created by \code{\link[mstate:transMat]{transMat}}.
 #' 
 #' @importFrom mstate msfit to.trans2
 #' @import survival
@@ -422,6 +441,8 @@ baseline_intensities_from_coxmod <- function(object, tmat){
 #' Expand covariates for a data frame so that covariates can be transition 
 #' specific.
 #' 
+#' @inherit probtrans_coxph params
+#' 
 #' @keywords internal
 
 
@@ -446,6 +467,8 @@ expand_covariates_long_data <- function(newdata){
 #' transition (numbers) in the second. Can expand later to include time-dependent
 #' covariates by introducing extra dimension. Entries of the matrix are exp(lp)_i^m,
 #' with i denoting the subject and m the transition.
+#' 
+#' @inherit probtrans_coxph params
 #' 
 #' @import survival
 #' 
@@ -541,7 +564,7 @@ subject_specific_intensity_matrices <- function(subject_specific_risks, baseline
   }
   subject_intensity_matrices <- array(intensity_matrices_zero_diag, 
                                       dim = c(dim(intensity_matrices_zero_diag), n_subjects))
-  
+  dimnames(subject_intensity_matrices)[[4]] <- rownames(subject_specific_risks)
   
   for(i in 1:n_subjects){
     for(m in 1:n_transitions){

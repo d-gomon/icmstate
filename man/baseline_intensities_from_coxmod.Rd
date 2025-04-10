@@ -7,6 +7,13 @@ coxph() fit on multi-state data.}
 \usage{
 baseline_intensities_from_coxmod(object, tmat)
 }
+\arguments{
+\item{object}{A \code{\link[survival:coxph]{coxph}} object fit on multi-state
+data. Must contain a \code{strata(X)} term. Data used for the coxph() fit preferably prepared 
+using \code{\link[mstate:msprep]{msprep}}.}
+
+\item{tmat}{A transition matrix as created by \code{\link[mstate:transMat]{transMat}}.}
+}
 \description{
 Recover baseline intensities (in the form of intensity_matrices) from a 
 coxph() fit on multi-state data.

@@ -44,18 +44,26 @@ Usually the stratum is determined from one of the required columns. The
 \item{trans}{A transition matrix as created by \code{\link[mstate:transMat]{transMat}}.}
 }
 \value{
-A list of length n (number of subjects in newdata), with each list component
+An object of class \code{"probtrans.subjects"}.
+This is a list of length n (number of subjects in newdata), with each list element
 an object of class \code{\link[mstate:probtrans]{probtrans}} for the associated 
-subject.
+subject. List elements can be accessed using \code{[[x]]}, with \code{x} 
+ranging from 1 to n. Additionally, each list element 
+has an additional element \code{$id}, representing the subject id.
 }
 \description{
 Given a coxph model fit on multi-state data (prepared with \code{\link[mstate:msprep]{msprep}}),
 determine transition probabilities for subjects in \code{newdata}.
 }
+\details{
+When using this function for \code{newdata} with many subjects, consider running the 
+function multiple times for parts of \code{newdata} to negate the risk of 
+running our of memory.
+}
 \examples{
 #Example from the mstate vignette
 #We determine the subject specific transition probabilities for subjects
-#in the ebmt3 data-set using only mstate functionality and using probtrans_coxph
+#in the ebmt3 data-set 
 if(require("mstate")){
   data(ebmt3)
   n <- nrow(ebmt3)
