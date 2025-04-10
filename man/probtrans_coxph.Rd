@@ -107,41 +107,48 @@ if(require("mstate")){
                 method = "breslow")
   
   #Same as c2, but now Gender mismatch has the same effect for both 
-  c4 <- coxph(Surv(Tstart, Tstop, status) ~ dissub1.1 + dissub2.1 +
+  c3 <- coxph(Surv(Tstart, Tstop, status) ~ dissub1.1 + dissub2.1 +
                 age1.1 + age2.1 + drmatch.1 + tcd.1 + dissub1.2 + dissub2.2 +
                 age1.2 + age2.2 + drmatch.2.3 + tcd.2 + dissub1.3 + dissub2.3 +
                 age1.3 + age2.3  + tcd.3 + pr + strata(to), data = msbmt,
               method = "breslow")
               
   
-  #We need to make a data.frame containing all subjects of interest
-  ttmat <- to.trans2(tmat)[, c(2, 3, 1)]
-  names(ttmat)[3] <- "trans"
-  nd_n <- NULL
-  for (j in 1:30) {
-    # Select global covariates of subject j
-    cllj <- ebmt3[j, covs]
-    nd2 <- cbind(ttmat, rep(j, 3), rbind(cllj, cllj, cllj))
-    colnames(nd2)[4] <- "id"
-    # Make nd2 of class msdata to use expand.covs
-    attr(nd2, "trans") <- tmat
-    class(nd2) <- c("msdata", "data.frame")
-    nd2 <- expand.covs(nd2, covs=covs, longnames = FALSE)
-    nd2$drmatch.2.3 <- nd2$drmatch.2 + nd2$drmatch.3
-    nd2$pr <- 0
-    nd2$pr[nd2$trans==3] <- 1
-    nd2$strata <- c(1, 2, 2)
-    nd_n <- rbind(nd_n, nd2)
-   }
-   
-   icmstate_pt <- probtrans_coxph(c2, predt = 0, direction = "forward", 
-                                  newdata = nd_n, trans = tmat)
+  #Predict for first 30 people in ebmt data
+  tmat2 <- to.trans2(tmat)[, c(2,3,1)]
+  names(tmat2)[3] <- "trans"
+  n_transitions <- nrow(tmat2)
+  
+  newdata <- ebmt3[rep(seq_len(30), each = nrow(tmat2)),]
+  newdata <- cbind(tmat2[rep(seq_len(nrow(tmat2)), times = 30), ], newdata)
+  #Make of class "msdata"
+  attr(newdata, "trans") <- tmat
+  class(newdata) <- c("msdata", "data.frame")
+  #Covariate names to expand
+  covs <- names(newdata)[5:ncol(newdata)]
+  newdata <- expand.covs(newdata, covs, append = TRUE, longnames = FALSE)
+  
+  newdata$drmatch.2.3 <- newdata$drmatch.2 + newdata$drmatch.3
+  
+  newdata$pr <- 0
+  newdata$pr[newdata$trans == 3] <- 1
+  
+  #Calculate transition probabilities for the Cox fits
+  icmstate_pt1 <- probtrans_coxph(c1, predt = 0, direction = "forward", 
+                                  newdata = newdata, trans = tmat)
+  icmstate_pt2 <- probtrans_coxph(c2, predt = 0, direction = "forward", 
+                                  newdata = newdata, trans = tmat)
+  icmstate_pt3 <- probtrans_coxph(c3, predt = 0, direction = "forward", 
+                                  newdata = newdata, trans = tmat)
                                   
-   #Now we can plot the transition probabilities for each subject separately:
-   plot(icmstate_pt[[1]])
-   #icmstate_pt has length number of subjects in newdata
-   #And icmstate_pt[[i]] is an object of class "probtrans", so you can 
-   #use all probtrans functions: summary, plot etc.
+  #Now we can plot the transition probabilities for each subject separately:
+  plot(icmstate_pt1[[1]])
+  #icmstate_pt has length number of subjects in newdata
+  #And icmstate_pt1[[i]] is an object of class "probtrans", so you can 
+  #use all probtrans functions: summary, plot etc.
+  
+  #Alternatively, use the plotting function directly:
+  plot(icmstate_pt2, id = 2)
 }
 
 
