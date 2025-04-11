@@ -35,7 +35,8 @@ subject in the data. It must contain the following named columns:
   match the names of the variables in the coxph \code{object}.}
 } Note that newdata must contain a column containing the variable which was 
 used to determine the stratum of a transition in \code{object}. 
-Usually the stratum is determined from a column that is generated automatically.}
+Usually the stratum is determined from a column that is generated automatically 
+in the pre-processing steps of this function.}
 
 \item{trans}{A transition matrix as created by \code{\link[mstate:transMat]{transMat}}.}
 }
@@ -58,7 +59,7 @@ function multiple times for parts of \code{newdata} to negate the risk of
 running our of memory.
 Using this function, it is only possible to consider models with transition specific covariates.
 If you would like to have covariates shared over transitions or proportional 
-hazards assumptions between transitions, see \code{\link[icmstate:probtrans_coxph()]{probtrans_coxph()}}.
+hazards assumptions between transitions, see \code{\link[probtrans_coxph()]{probtrans_coxph()}}.
 }
 \examples{
 #Example from the mstate vignette
@@ -100,4 +101,8 @@ if(require("mstate")){
 }
 
 
+}
+\seealso{
+\code{\link{probtrans_coxph}}, \code{\link{plot.probtrans.subjects}},
+\code{\link{summary.probtrans.subjects}}
 }

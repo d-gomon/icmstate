@@ -24,7 +24,8 @@
 #'   match the names of the variables in the coxph \code{object}.}
 #' } Note that newdata must contain a column containing the variable which was 
 #' used to determine the stratum of a transition in \code{object}. 
-#' Usually the stratum is determined from a column that is generated automatically.
+#' Usually the stratum is determined from a column that is generated automatically 
+#' in the pre-processing steps of this function.
 #' @param trans A transition matrix as created by \code{\link[mstate:transMat]{transMat}}.
 #' 
 #' 
@@ -43,11 +44,14 @@
 #' running our of memory.
 #' Using this function, it is only possible to consider models with transition specific covariates.
 #' If you would like to have covariates shared over transitions or proportional 
-#' hazards assumptions between transitions, see \code{\link[icmstate:probtrans_coxph()]{probtrans_coxph()}}.
+#' hazards assumptions between transitions, see \code{\link[probtrans_coxph()]{probtrans_coxph()}}.
 #' 
 #' 
 #' @importFrom stats terms
 #' @import mstate
+#' 
+#' @seealso \code{\link{probtrans_coxph}}, \code{\link{plot.probtrans.subjects}},
+#' \code{\link{summary.probtrans.subjects}}
 #' 
 #' @export
 #' 
@@ -113,7 +117,7 @@ predict_tp <- function(object, predt,
   
   
   #######################One line per transition per subject################
-  tmat2 <- to.trans2(tmat)[, c(2,3,1)]
+  tmat2 <- to.trans2(trans)[, c(2,3,1)]
   names(tmat2)[3] <- "trans"
   n_transitions <- nrow(tmat2)
   
