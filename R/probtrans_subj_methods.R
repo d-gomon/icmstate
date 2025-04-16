@@ -178,7 +178,8 @@ summary.probtrans.subjects <- function(object, id, times, from=1, to=0,
   which_id <- which(object[["subject_ids"]] == id)  
   
   if(length(which_id) == 1){
-    res <- summary(object[[which_id]], variance = FALSE, extend = extend, ...)
+    res <- summary(object[[which_id]], variance = FALSE, extend = extend, times = times,
+                   from = from, to = to, ...)
     attr(res, "id") <- id
     class(res) <- "summary.probtrans.subjects"
     return(res)
