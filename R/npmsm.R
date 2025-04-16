@@ -58,12 +58,12 @@
 #' @param include_inf Should an additional bin from the largest observed time to 
 #' infinity be included in the algorithm? Default is FALSE.
 #' @param checkMLE Should a check be performed whether the estimate has converged 
-#' towards a true Maximum Likelihood Estimate? This is done by comparing 
+#' towards a local maximum? This is done by comparing 
 #' the reduced gradient to the value of \code{checkMLE_tol}. Default is TRUE.
-#' @param checkMLE_tol Tolerance for checking whether the estimate has converged to MLE.
+#' @param checkMLE_tol Tolerance for checking whether the estimate has converged to local maximum.
 #' Whenever an estimated transition intensity is smaller than \code{prob_tol}, it is assumed 
 #' to be zero and its reduced gradient is not considered for determining whether 
-#' the NPMLE has been reached. Default = \code{1e-4}.
+#' the maximum has been reached. Default = \code{1e-4}.
 #' @param prob_tol If an estimated probability is smaller than \code{prob_tol}, 
 #' it will be set to zero during estimation. Default value is \code{tol/10}.
 #' @param remove_redundant Should redundant observations be removed before running 
