@@ -31,8 +31,8 @@
 #' @param deg_splines Degree to use for the B-spline basis functions. Defaults 
 #' to 3 (cubic B-splines).
 #' @param n_segments Number of segments to use for the P-splines. The
-#' segments will space the domain evenly. According to Eilers \& Marx (2021), this 
-#' number cannot be chosen too large. Default = 20. 
+#' segments will space the domain evenly. According to Eilers \& Marx (2021), it 
+#' it OK to choose this number very large. Default = 20. 
 #' @param ord_penalty Order of the P-spline penalty (penalty on the difference 
 #' between d-order differences of spline coefficients). See Eilers \& Marx 
 #' Section 2.3. Defaults to 2.
@@ -83,10 +83,11 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                       maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
                       verbose = FALSE, prob_tol = tol/10){
   
-  
-
 # Pre-processing ---------------------------------------
 
+  if(missing(formula)){
+    formula <- NULL
+  }
 
   ## Argument checks ---------------------------------------------------------
   call <- match.call()
@@ -97,7 +98,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   assertDataFrame(gd, min.cols = 3, max.cols = 3, add = arg_checks)
   assertNames(names(gd), must.include = c("id", "state", "time"), 
               add = arg_checks)
-  assert_class(gd[, "id"], classes = c("numeric", "character"), add = arg_checks)
+  if(!inherits(gd[, "id"], "numeric") && !inherits(gd[, "id"], "character")){
+    stop("The 'id' column in 'gd' must be of class numeric or character.")
+  }
   assertIntegerish(gd[, "state"], add = arg_checks)
   assertNumeric(gd[, "time"], lower = 0, add = arg_checks)
   if(!missing(exact)){
@@ -107,40 +110,55 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   assertNumeric(tol, add = arg_checks)
   assertLogical(verbose, add = arg_checks)
   
-  #Check if all states in gd are also in tmat
-  assertTRUE(all(unique(gd[, "state"]) %in% 1:nrow(tmat2)), add = arg_checks)
-  
-  # Check Spline arguments
+  # Check Spline arguments (See Eilers/Marx (2021) Section 2.3)
   
   #B-spline basis must be at least degree 0
   assertIntegerish(deg_splines, lower = 0, upper = Inf, max.len = 1, min.len = 1,
                    add = arg_checks)
-  #P-spline penalty order must be at least 1
-  assertIntegerish(ord_penalty, lower = 1, upper = Inf, min.len = 1, max.len = 1,
+  #Number of segments must be positive integer (deg_spline + 1 I think?)
+  assertIntegerish(n_segments, lower = 1, upper = Inf, max.len = 1, min.len = 1,
                    add = arg_checks)
+  #P-spline penalty order must be at least 1, must be smaller than
+  #n_splines = deg_splines + n_segments
+  assertIntegerish(ord_penalty, lower = 1, upper = deg_splines + n_segments -1,
+                   min.len = 1, max.len = 1, add = arg_checks)
   
   assertFormula(formula, null.ok = TRUE, add = arg_checks)
   
-
   ## Data processing ---------------------------------------------------------
 
+  #Retain original data (maybe scrap later)
+  gd_orig <- gd
+  
+  #Change subject names to integers<<<<<<<<>>>>>>>>>>>>>>
+  #Sort w.r.t. id and time
+  gd <- gd[order(gd[, "id"], gd[, "time"]), ]
+  original_subject_names <- unique(gd[, "id"]) #This can be numeric or character
+  n_subjects <- length(original_subject_names)
+  subject_names <- 1:n_subjects #New names, integer
+  #Assign new names (now always integer)
+  gd[, "id"] <- subject_names[match(gd[, "id"], original_subject_names)]
+  
+  #Transform data to matrix for faster operations
+  gd <- as.matrix(gd)
+  
+  #Determine slices for each subject and store in hashmap (faster lookup)
+  subject_slices <- new.env(parent = emptyenv(), size = n_subjects)
+  for(subj in subject_names){
+    subject_slices[[as.character(subj)]] <- which(gd[, "id"] == subj)
+  }
+  
   #Data transformations for probtrans compatibility
-  #We set the smallest time to 0, because probtrans always calculates from 0 onward.
-  min_time <- min(gd[, "time"])
-  gd[which(gd$time == min_time), "time"] <- 0
+  #We shift all times by the minimum time, so that new minimum time becomes 0
+  #because probtrans always calculates from 0 onward.
+  min_time_orig <- min(gd[, "time"])
+  gd[, "time"] <- gd[, "time"] - min_time_orig
   
   max_time <- max(gd[, "time"])
   
   tmat2 <- mstate::to.trans2(tmat)
   
-  #TODO: NEED TO CHECK WHETHER the given n_intervals can be used
-  #Must be larger than the number if we were to use interval size equal to smallest transition interval
-  #Note that domain_length = max_time, as we set smallest time to 0
-  
   ## Derive parameters from data ---------------------------------------------
-  
-  subject_names <- unique(gd[, "id"])
-  n_subjects <- length(subject_names)
 
   n_states <- nrow(tmat) # no of states
   n_transitions <- nrow(tmat2) # no of transitions
@@ -148,25 +166,29 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   # Spline quantities
   n_splines <- deg_splines + n_segments
   
+  #>>>>>>>>>>>>>>>>>>>>BIN LENGTH<<<<<<<<<<<<<<<<<<<<<
+  #Determine length of bins and initialize them (using their mid and right-endpoints)
+  #The bins are taken to be small enough that no two subsequent transitions 
+  #of the same individual are present within any bin. 
+  #To make it easy, we (for now) take the bin size to be the smallest 
+  #difference between two consecutive observation times
+  bin_length <- min(diff(sort(unique(gd[, "time"])))) #In article, represented by w
   
-
+  bin_right <- seq(bin_length, max_time + bin_length, by = bin_length)
+  n_bins <- length(bin_right) #Represented in article by U
+  bin_middle <- (1:n_bins - 0.5)*bin_length #Represented by \overline{\tau_u}
   ## Derived Quantities Check ------------------------------------------------
 
   #If covariates specified.
-  if(!is.null(data)){
+  if(!missing(data)){
     subject_names_data <- unique(data[, "id"])
     
     #Check whether all observed subjects also have related covariates
     assertTRUE(all(subject_names %in% subject_names_data), add = arg_checks)
   }
   
-  #See Eilers/Marx (2021) Section 2.3
-  assertTRUE(ord_penalty < n_splines, add = arg_checks)
-  
-  #Need to perform checks on spline derivatives
-  #Order must be smaller than number of B-spline basis functions
-  #Number of B-spline basis functions is equal to degree of B-splines + number of segments
-  #Seeing as segments are evenly spaced
+  #Check if all states in gd are also in tmat
+  assertTRUE(all(unique(gd[, "state"]) %in% 1:nrow(tmat2)), add = arg_checks)
   
   
   #Report assertions
@@ -175,30 +197,70 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   ## Additional parameter determination ------------------------------------
   
+  #Penalization matrix used in P-spline estimation
   penalization_matrix <- diff(diag(n_splines), diff=ord_penalty)
 
 # EM Algorithm ------------------------------------------------------------
 
   
-  #Pass by reference using environments:
+  #Pass by reference using environments (we don't want to copy objects all the time):
   #https://bookdown.org/content/d1e53ac9-28ce-472f-bc2c-f499f18264a3/reference.html
   
-  #Initiate initial estimates
+  #>>>>>>>>>>>>>>>Initiate initial estimates<<<<<<<<<<<<<<<<<<<
+  #We need to initiate values for \theta = (\alpha, \beta)
+  #with \alpha the B-spline coefficients 
+  #and \beta the regression coefficients
+  #We maximize over each transition separately,
+  #so \vec{\alpha} can be represented using a n_splines x n_transitions matrix
+  #with each column representing the estimates of \alpha_{gh} for that transition g->h
   
-  #Initiate 
-
-
-  ## E step ------------------------------------------------------------------
-
-
-
-  ## M Step ------------------------------------------------------------------
-
+  EM_estimates <- new.env(parent = emptyenv())
   
+  #>>>>>>>>>>>>>>>>>>>>>Initiate Spline coefficients<<<<<<<<<<<<<<<<<<<<<
+  EM_estimates[["spline_coefficients_old"]] <- matrix(, nrow = n_splines, ncol = n_transitions)
+  EM_estimates[["spline_coefficients_new"]] <- matrix(NA, nrow = n_splines, ncol = n_transitions)
+  #>>>>>>>>>>>>>>>>>>>>>Initiate regression coefficients<<<<<<<<<<<<<<<<<<<<<
   
+  #Initiate with infinite convergence criterion
+  conv_criterion = Inf
+  
+  while(conv_criterion > tol){
+    
+    #We work separately for each transition
+    for(transition in 1:n_transitions){
+      ## E step ------------------------------------------------------------------
+      
+      #E.1
+      #If data supplied: calculate risk-adjustment factors for each transition
+      #for each subject: n_subjects x transitions matrix
+      #Else: data <- NULL and in next functions adjust for this
+      
+      #E.2
+      #Write probtrans_ODE or something, using ODE to:
+      #Solve ODEs for all subjects (n), for all bins (U), determining:
+      #P_{gh, i}(from, to). Maybe write only in 1 single direction? "forward"?
+      
+      
+      
+    
+      # M Step ------------------------------------------------------------------
+      
+      #For this step, use JOPS::psPoisson() to obtain updated estimates
+      #Remember that d_{gh,i}^u is a realisation of Poisson(Y_{g,i}^u exp(\eta_{gh,i}^u))
+      #Check icpack for implementation of GLM Poisson regression. 
+      #This will then yield coefficients of B-splines (for each transition)
+      
+      
+      
+    }
+    ## Update estimates + convergence criterion ------------------
+    
+    
+  }
     
   
-  
-  
+  return(subject_slices)
+  #DONT FORGET TO SHIFT times BACK BY 
+  #min_time_orig
   
 }
