@@ -136,6 +136,8 @@ probtrans_D <- function(int_mat, predt, direction = c("forward", "fixedhorizon")
 
 probtrans_C <- function(int_mat, predt, cutoff, direction = c("forward", "fixedhorizon"), as.df = FALSE){
   
+  #Only difference between probtrans_C and probtrans_D is that
+  #probtrans_C has the cutoff argument, allowing to select smaller time windows
   #Cutoff must be larger/smaller than predt when direction is forward/fixedhorizon
   
   #Get only the matrices and times relevant for our probabilities

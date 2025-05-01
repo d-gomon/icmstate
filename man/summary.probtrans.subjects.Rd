@@ -4,7 +4,15 @@
 \alias{summary.probtrans.subjects}
 \title{Summary method for a probtrans.subjects object}
 \usage{
-\method{summary}{probtrans.subjects}(object, id, times, from = 1, to = 0, extend = FALSE, ...)
+summary.probtrans.subjects(
+  object,
+  id,
+  times,
+  from = 1,
+  to = 0,
+  extend = FALSE,
+  ...
+)
 }
 \arguments{
 \item{object}{Object of class 'probtrans.subjects', containing estimated transition

@@ -12,13 +12,15 @@ smoothmsm(
   formula,
   data,
   deg_splines = 3,
+  n_segments = 20,
   ord_penalty = 2,
-  n_intervals,
+  n_bins,
   maxit = 100,
   tol = 1e-04,
   conv_crit = c("haz", "prob", "lik"),
   verbose = FALSE,
-  prob_tol = tol/10
+  prob_tol = tol/10,
+  ode_solver = "lsoda"
 )
 }
 \arguments{
@@ -41,11 +43,21 @@ Must coincide with the column number in \code{tmat}.}
 variables which to interpret in \code{formula}.}
 
 \item{deg_splines}{Degree to use for the B-spline basis functions. Defaults 
-to cubic B-splines (degree 3).}
+to 3 (cubic B-splines).}
+
+\item{n_segments}{Number of segments to use for the P-splines. The
+segments will space the domain evenly. According to Eilers \& Marx (2021), it 
+it OK to choose this number very large. Default = 20.}
 
 \item{ord_penalty}{Order of the P-spline penalty (penalty on the difference 
 between d-order differences of spline coefficients). See Eilers \& Marx 
-Section 2.3. Defaults to 2}
+Section 2.3. Defaults to 2.}
+
+\item{n_bins}{How many evenly spaced bins should the domain be split into 
+for the estimation problem (unrelated to the splines). The evenly spaced bins 
+must not contain any two consecutive transition intervals of a single subject.
+By default, the number of bins is chosen equal to the length of the 
+smallest observed transition interval.}
 
 \item{maxit}{Maximum number of iterations. Default = 100.}
 
@@ -68,15 +80,8 @@ conservative (requiring most iterations) is "prob", followed by "haz" and finall
 \item{prob_tol}{If an estimated probability is smaller than \code{prob_tol}, 
 it will be set to zero during estimation. Default value is \code{tol/10}.}
 
-\item{inits}{Which distribution should be used to generate the initial estimates 
-of the intensities in the EM algorithm. One of c("equalprob", "unif", "beta"), 
-with "equalprob" assigning 1/K to each intensity, with K the number of distinct 
-observation times (\code{length(unique(gd[, "time"]))}). For "unif", each 
-intensity is sampled from the Unif[0,1] 
-distribution and for "beta" each intensity is sampled from the Beta(a, b) distribution. 
-If "beta" is chosen, the argument \code{beta_params} must be specified as a 
-vector of length 2 containing the parameters of the beta distribution.
-Default = "equalprob".}
+\item{ode_solver}{The integrator to use for solving the ODE's. See 
+\code{\link[deSolve:ode]{ode()}}. By default, the "lsoda" solver will be used.}
 }
 \description{
 For a general Markov chain multi-state model with interval censored 
