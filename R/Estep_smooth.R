@@ -22,17 +22,18 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est){
   n_transitions <- fix_pars[["n_transitions"]]
   n_bins <- fix_pars[["n_bins"]]
   n_covariates <- fix_pars[["n_covariates"]]
+  n_splines <- fix_pars[["n_splines"]]
   tmat2 <- fix_pars[["tmat2"]]
   deg_splines <- fix_pars[["deg_splines"]]
   n_segments <- fix_pars[["n_segments"]]
   n_coefficients <- fix_pars[["n_coefficients"]]
+  gd <- fix_pars[["gd"]]
   if(n_covariates != 0){
     mod_matrix <- fix_pars[["mod_matrix"]]
   }
   #Initial value for ode solver - maybe also push to fix_pars?
   ode_init <- diag(1, n_states, n_states)
   
-  parameters <- cbx
   
   # Reset NumTrans and AtRisk to zero arrays.
   EM_est[["NumTrans"]][] <- 0 #array(0, dim=c(n_bins, n_transitions, n_subjects))
@@ -137,11 +138,11 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est){
             to <- tmat2$to[transno]
             s2t <- (sbin : tbin)
             #Calculate the log-hazard
-            loghaz <- c(icpack::bbase(s2t, xl = 0, xr = n_bins, nseg = n_segments, 
-                                      deg = deg_splines) %*% EM_est[["coeff_old"]][[1:n_splines, transno]])
+            loghaz <- c(JOPS::bbase(s2t, xl = 0, xr = n_bins, nseg = n_segments, 
+                                      bdeg = deg_splines) %*% EM_est[["coeff_old"]][1:n_splines, transno])
             #Risk-adjust if we have to
             if(n_covariates != 0){
-              loghaz_RA <- c(mod_matrix[i, ] %*% EM_est[["coef_old"]][(n_splines+1):n_coefficients, transno])
+              loghaz_RA <- c(mod_matrix[i, ] %*% EM_est[["coeff_old"]][(n_splines+1):n_coefficients, transno])
             } else{
               loghaz_RA <- 0
             }

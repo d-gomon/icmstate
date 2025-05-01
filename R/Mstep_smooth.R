@@ -24,13 +24,14 @@
 
 
 
-Mstep_smooth <- function(fix_pars, EM_est, transno, from) {
+Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   
   #function(Y, R, X, B, Pen, lambda, cbx)
   
   n_splines <- fix_pars[["n_splines"]] #=n_splines
   n_covariates <- fix_pars[["n_covariates"]] #=n_covariates
   B <- fix_pars[["Bspline_basis"]]
+  X <- fix_pars[["mod_matrix"]]
   lambda <- EM_est[["lambda"]][transno]
   
   # Compute hazard, expected values and residuals

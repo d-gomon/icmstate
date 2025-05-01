@@ -27,11 +27,6 @@
 #' @param ord_penalty Order of the P-spline penalty (penalty on the difference 
 #' between d-order differences of spline coefficients). See Eilers \& Marx 
 #' Section 2.3. Defaults to 2.
-#' @param n_bins How many evenly spaced bins should the domain be split into 
-#' for the estimation problem (unrelated to the splines). The evenly spaced bins 
-#' must not contain any two consecutive transition intervals of a single subject.
-#' By default, the number of bins is chosen equal to the length of the 
-#' smallest observed transition interval.
 #' @param maxit Maximum number of iterations. Default = 100.
 #' @param tol Tolerance of the convergence procedure. A change in the value of 
 #' \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.
@@ -74,7 +69,7 @@
 
 
 smoothmsm <- function(gd, tmat, exact, formula, data,
-                      deg_splines = 3, n_segments = 20, ord_penalty = 2, n_bins,
+                      deg_splines = 3, n_segments = 20, ord_penalty = 2, 
                       maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
                       verbose = FALSE, prob_tol = tol/10, ode_solver = "lsoda"){
   
@@ -149,12 +144,6 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Transform data to matrix for faster operations
   gd <- as.matrix(gd)
   
-  #Determine slices for each subject and store in hashmap (faster lookup)
-  subject_slices <- hashtab(type = "identical", size = n_subjects)
-  for(subj in subject_names){
-    sethash(subject_slices, subj, which(gd[, "id"] == subj))
-  }
-  #Takes a long time initially, but compensates a lot later.
   
   #Data transformations for probtrans compatibility
   #We shift all times by the minimum time, so that new minimum time becomes 0
@@ -183,7 +172,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   #Scale data by bin length (so bin endpoints are always at 1,2,...)
   gd[, "time"] <- gd[, "time"]/bin_length
-  max_time <- ceiling(max(gd[, "time"]))
+  max_time <- ceiling(max(gd[, "time"])) + 1L
   bin_right <- 1:max_time
   n_bins <- max_time #Represented in article by U
   bin_middle <- (1:n_bins) - 0.5 #Represented by \overline{\tau_u}
@@ -223,7 +212,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   # Penalty matrix
   ridge_penalty <- 1e-06 #User could choose this...
-  D <- diff(diag(n_splines), diff = pord)
+  D <- diff(diag(n_splines), diff = ord_penalty)
   Pdiff = Pridge = 0 * diag(n_splines + n_covariates)
   Pdiff[1:n_splines, 1:n_splines] = t(D) %*% D   #I don't understand why, but sure.
   diag(Pridge)[n_splines + (1:n_covariates)] = ridge_penalty
@@ -231,7 +220,8 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   ## Fixed parameters - single list -----------------------
   #We could make this into an environment if we run into performance issues
   #Using hashtab, simply perform sethash() multiple times, with character names "n_segments" etc.
-  fix_pars <- list(deg_splines = deg_splines,
+  fix_pars <- list(gd = gd,
+                   deg_splines = deg_splines,
                    n_segments = n_segments,
                    ord_penalty = ord_penalty,
                    n_bins = n_bins,
@@ -242,7 +232,6 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    n_transitions = n_transitions,
                    n_splines = n_splines,
                    bin_length = bin_length,
-                   n_bins = n_bins,
                    penalization_matrix = penalization_matrix,
                    n_covariates = n_covariates,
                    n_coefficients = n_splines + n_covariates,
@@ -261,6 +250,14 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #max_time is the maximum time in the scaled timeframe, representing 
   #the right endpoint of the final "bin"
   
+  
+  #Determine slices for each subject and store in hashmap (faster lookup)
+  subject_slices <- hashtab(type = "identical", size = n_subjects)
+  for(subj in subject_names){
+    sethash(subject_slices, subj, which(gd[, "id"] == subj))
+  }
+  #Takes a long time initially, but compensates a lot later.
+
   
 # EM Algorithm ------------------------------------------------------------
 
@@ -283,11 +280,11 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #>>>>>>>>>>>>>>>>>>>>>Initiate Spline + regression coefficients<<<<<<<<<<<<<<<<<<<<<
   
   # We stash the coefficients as follows \theta = c(\alpha, \beta)
-  sethash(EM_est, "coeff_old") <- matrix(c(rep(log(1/n_bins), n_splines), 
+  EM_est[["coeff_old"]] <- matrix(c(rep(log(1/n_bins), n_splines), 
                                            rep(1, n_covariates)), 
                                          nrow = n_splines + n_covariates, 
                                          ncol = n_transitions)
-  sethash(EM_est, "coeff_new") <- matrix(c(rep(log(1/n_bins), n_splines), 
+  EM_est[["coeff_new"]] <- matrix(c(rep(log(1/n_bins), n_splines), 
                                            rep(1, n_covariates)), 
                                          nrow = n_splines + n_covariates, 
                                          ncol = n_transitions)
@@ -295,28 +292,30 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Maybe think of other initial conditions
   
   #>>>>>>>>>>>>>>>>>>>>>>Initiate expected value matrices<<<<<<<<<<<<<<<<<<<
-  sethash(EM_est, "AtRisk") <- array(0, dim = c(n_bins, n_transitions, 
+  EM_est[["AtRisk"]] <- array(0, dim = c(n_bins, n_states, 
                                                        n_subjects))
-  sethash(EM_est, "NumTrans") <- array(0, dim = c(n_bins, n_states, 
+  EM_est[["NumTrans"]] <- array(0, dim = c(n_bins, n_transitions, 
                                                        n_subjects))
   
   
   #>>>>>>>>>>>>>>>>>>>>>>>Keep track of likelihood<<<<<<<<<<<<<<<<<<<<<<<<<<
-  sethash(EM_est, "loglik_old") <- -Inf
-  sethash(EM_est, "loglik_new") <- -Inf
+  EM_est[["loglik_old"]] <- -Inf
+  EM_est[["loglik_new"]] <- -Inf
   
   #>>>>>>>>>>>>>>>>>>>>>>Penalization coefficient lambda<<<<<<<<<<<<<<<<<<<<
   # Separate penalization coefficient for each transition.
-  sethash(EM_est, "lambda") <- rep(100, n_transitions)
+  EM_est[["lambda"]] <- rep(100, n_transitions)
   
   #Initiate with infinite convergence criterion
   conv_criterion = Inf
   
-  
-  while(conv_criterion > tol){
+  cat("Progress showing it, loglik, delta(loglik), lambda's, time-averaged rates:\n")
+  ll_history <- vector(mode = "numeric", length = maxit)
+  it_num <- 1
+  while(conv_criterion > tol & it_num < maxit + 1){
     ## E step ------------------------------------------------------------------
     
-    
+    cat("Start Estep iteration", it_num, "\n")
     #E.2
     #Write probtrans_ODE or something, using ODE to:
     #Solve ODEs for all subjects (n), for all bins (U), determining:
@@ -333,7 +332,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     #We work separately for each transition in the M step
     for(transno in 1:n_transitions){
       ## M Step ------------------------------------------------------------------
-      
+      cat("Start Mstep transition", transno, "\n")
       #For this step, the idea is to use JOPS::psPoisson() to obtain updated estimates
       #Remember that d_{gh,i}^u is a realisation of Poisson(Y_{g,i}^u exp(\eta_{gh,i}^u))
       #Check icpack for implementation of GLM Poisson regression. 
@@ -345,7 +344,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
       from <- tmat2[transno, "from"]
       to <- tmat2[transno, "to"]
       #Called for side-effects, updates EM_est: "lambda" and "coeff_old" and "coeff_new"
-      Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from)
+      Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from, Pen = Pen)
       #Mstep_smooth(EM_est[["NumTrans"]][, transno, ], EM_est[["AtRisk"]][, from, ], X, B, Pen, lambda[transno], c(cbx[[transno]], 0))
       
       #eta <- icpack::bbase(1:nt, xl = 0, xr = nt, nseg = nseg, deg = bdeg) %*% cbx[[transno]]
@@ -357,18 +356,27 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     }
     
     ## Check convergence  ------------------
-    
+    ll_history[it_num] <- EM_est[["loglik_old"]]
     ll_dif <- EM_est[["loglik_new"]] - EM_est[["loglik_old"]]
+    
+    cat(c(it_num, EM_est[["loglik_new"]], ll_dif), "\n")
+    
     
     ## Update EM estimates -------------------
     
     EM_est[["coeff_old"]] <- EM_est[["coeff_new"]]
     EM_est[["loglik_old"]] <- EM_est[["loglik_new"]]
     
+    it_num <- it_num + 1
   }
     
+  out <- list(coefficients = EM_est[["coeff_old"]],
+              AtRisk = EM_est[["AtRisk"]],
+              NumTrans = EM_est[["NumTrans"]],
+              loglik = ll_history,
+              fix_pars = fix_pars)
   
-  return(subject_slices)
+  return(out)
   
   #First, scale time back by * bin_length
   #Then:

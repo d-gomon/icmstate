@@ -36,9 +36,12 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   #Extract some parameters
   n_transitions <- fix_pars[["n_transitions"]]
   n_states <- fix_pars[["n_states"]]
+  n_covariates <- fix_pars[["n_covariates"]]
+  n_splines <- fix_pars[["n_splines"]]
   max_time <- fix_pars[["max_time"]]
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
+  tmat2 <- fix_pars[["tmat2"]]
   #Current estimate of P: ode() will fill this in.
   P <- matrix(state, n_states, n_states)
   # Build dA matrix - containing intensities
@@ -49,7 +52,8 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
       exp(JOPS::bbase(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
     if(n_covariates != 0){
-      dA <- dA * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno])
+      dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
+        c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
     }
   }
   diag(dA) <- -apply(dA, 1, sum)
@@ -72,7 +76,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   n_transitions <- fix_pars[["n_transitions"]]
   n_states <- fix_pars[["n_states"]]
   n_covariates <- fix_pars[["n_covariates"]]
-  n_splines <- fix_pars[["n_covariates"]]
+  n_splines <- fix_pars[["n_splines"]]
   max_time <- fix_pars[["max_time"]]
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
@@ -83,9 +87,10 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   dA <- matrix(0, n_states, n_states)
   for (transno in 1:n_transitions){
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
-    exp(JOPS::bbase(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
+      exp(JOPS::bbase(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
     if(n_covariates != 0){
-      dA <- dA * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno])
+      dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
+        c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
     }
   }
   diag(dA) <- -apply(dA, 1, sum)
