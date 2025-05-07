@@ -4,9 +4,11 @@
 \alias{Mstep_smooth}
 \title{Function for fitting proportional hazard model with baseline hazard}
 \usage{
-Mstep_smooth(fix_pars, EM_est, transno, from)
+Mstep_smooth(fix_pars, EM_est, transno, from, Pen = Pen)
 }
 \arguments{
+\item{Pen}{Penalty matrix}
+
 \item{Y}{Expected events (matrix)}
 
 \item{R}{Expected risk sets (matrix)}
@@ -14,8 +16,6 @@ Mstep_smooth(fix_pars, EM_est, transno, from)
 \item{X}{Covariates (matrix)}
 
 \item{B}{B-spline basis}
-
-\item{Pen}{Penalty matrix}
 
 \item{lambda}{Smoothing parameter (number)}
 

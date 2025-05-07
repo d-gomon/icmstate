@@ -14,7 +14,6 @@ smoothmsm(
   deg_splines = 3,
   n_segments = 20,
   ord_penalty = 2,
-  n_bins,
   maxit = 100,
   tol = 1e-04,
   conv_crit = c("haz", "prob", "lik"),
@@ -52,12 +51,6 @@ it OK to choose this number very large. Default = 20.}
 \item{ord_penalty}{Order of the P-spline penalty (penalty on the difference 
 between d-order differences of spline coefficients). See Eilers \& Marx 
 Section 2.3. Defaults to 2.}
-
-\item{n_bins}{How many evenly spaced bins should the domain be split into 
-for the estimation problem (unrelated to the splines). The evenly spaced bins 
-must not contain any two consecutive transition intervals of a single subject.
-By default, the number of bins is chosen equal to the length of the 
-smallest observed transition interval.}
 
 \item{maxit}{Maximum number of iterations. Default = 100.}
 

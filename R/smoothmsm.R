@@ -281,11 +281,11 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   # We stash the coefficients as follows \theta = c(\alpha, \beta)
   EM_est[["coeff_old"]] <- matrix(c(rep(log(1/n_bins), n_splines), 
-                                           rep(1, n_covariates)), 
+                                           rep(0, n_covariates)), 
                                          nrow = n_splines + n_covariates, 
                                          ncol = n_transitions)
   EM_est[["coeff_new"]] <- matrix(c(rep(log(1/n_bins), n_splines), 
-                                           rep(1, n_covariates)), 
+                                           rep(0, n_covariates)), 
                                          nrow = n_splines + n_covariates, 
                                          ncol = n_transitions)
   
@@ -374,7 +374,8 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
               AtRisk = EM_est[["AtRisk"]],
               NumTrans = EM_est[["NumTrans"]],
               loglik = ll_history,
-              fix_pars = fix_pars)
+              fix_pars = fix_pars,
+              EM_est = EM_est) 
   
   return(out)
   
