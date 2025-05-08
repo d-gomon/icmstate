@@ -61,7 +61,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est){
         t <- datai[iobs + 1, "time"] # ending time
         sbin <- ceiling(datai[iobs, "time"])
         tbin <- ceiling(datai[iobs + 1, "time"])
-        st <- t - s # interval length
+        #st <- t - s # interval length
         # deb(c(iobs, g, h, s, t, st), method="cat")
         # Within this interval reset time s to 0, time t to st
         # ntimes <- ceiling(st - 0.0001)
@@ -101,17 +101,18 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est){
           # parms[[5]] <- sbin
           # Forward ODE
           # cat("Forward ODE ...\n")
-          fwd <- ode(y = ode_init, times = times, func = ChapKolm_fwd_smooth,
+          browser()
+          fwd <- suppressWarnings(ode(y = ode_init, times = times, func = ChapKolm_fwd_smooth,
                      parms = EM_est, method = "lsoda", fix_pars = fix_pars, 
-                     subject = i)
+                     subject = i))
           fwd[fwd < 0] <- 0
           # fwd_array <- array(fwd[, -1], dim=c(ntimes1, n_states, n_states))
           fwd_array <- array(fwd[, -1], dim=c(ntimes, n_states, n_states))
           # Backward ODE
           # cat("Backward ODE ...\n")
-          bwd <- ode(y = ode_init, times = times, func = ChapKolm_bwd_smooth,
+          bwd <- suppressWarnings(ode(y = ode_init, times = times, func = ChapKolm_bwd_smooth,
                      parms = EM_est, method = "lsoda", fix_pars = fix_pars,
-                     subject = i)
+                     subject = i))
           bwd[bwd < 0] <- 0
           # bwd_array <- array(bwd[ntimes1:1, -1], dim=c(ntimes1, n_states, n_states)) # backwards in time
           bwd_array <- array(bwd[ntimes:1, -1], dim=c(ntimes, n_states, n_states)) # backwards in time

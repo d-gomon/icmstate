@@ -3,7 +3,8 @@
 #' 
 #' @description For a general Markov chain multi-state model with interval censored 
 #' transitions calculate the NPMLE of the transition intensities. The estimates 
-#' are returned as an \code{\link[mstate:msfit]{msfit}} object.
+#' are returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
+#' in the data will be set to zero.
 #' 
 #' 
 #' @param gd A \code{data.frame} with the following named columns
@@ -369,25 +370,76 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     
     it_num <- it_num + 1
   }
-    
+
+# Output Creation ---------------------------------------------------------
+
+  #Create a smoothmsfit object which we will use for plotting
+  #Here we also shift back time to original frame:
+  #First, scale time back by * bin_length
+  #Then shift back time by: +min_time_orig
+  smoothmsfit <- create_smoothmsfit(fix_pars = fix_pars, EM_est = EM_est)
+  
   out <- list(coefficients = EM_est[["coeff_old"]],
               AtRisk = EM_est[["AtRisk"]],
               NumTrans = EM_est[["NumTrans"]],
               loglik = ll_history,
               fix_pars = fix_pars,
-              EM_est = EM_est) 
+              EM_est = EM_est,
+              min_time = min_time_orig,
+              smoothmsfit = smoothmsfit) 
   
+  #Assign 'smoothmsm' class so we can use 'smoothmsm' functions on output
+  class(out) <- "smoothmsm"
   return(out)
-  
-  #First, scale time back by * bin_length
-  #Then:
-  #DONT FORGET TO SHIFT times BACK BY 
-  #+min_time_orig
-  
-  #We want to return some format which allows for plotting hazards
-  #We want to return the coefficients
-  #We want to be able to calculate transition probabilities as well
-  #So just msfit I guess? + some way to return coefficients?
-
-  
 }
+
+
+
+#' Create 'smoothmsfit' object from 'smoothmsm' output
+#' 
+#' The goal is to create a data.frame which contains all the necessary 
+#' information for plotting hazards, allowing for risk-adjusted curves as well.
+#' 
+#' 
+#' @keywords internal
+#' @noRd
+#' 
+#' 
+#' 
+#' 
+
+create_smoothmsfit <- function(fix_pars, EM_est){
+  #We create a 'msfit' part of this function containing the usual
+  #$Haz ($time, $Haz, $trans), $varHaz, $trans components for the baseline hazard
+  #Also, with Bsplines we actually recover the (non-cumulative) hazard, which we store as
+  #$haz ($time, $haz, $trans), $varhaz, $trans
+  #Additionally, we will have $mod_matrix (containing the covariates for subjects)
+  #and $BsplineBasis for the basis used 
+  
+  out <- vector(mode = "list")
+  out$mod_matrix <- fix_pars[["mod_matrix"]]
+  out$Bspline_basis <- fix_pars[["Bspline_basis"]]
+  #Coefficients will be a list containing the $spline and $covariate coefficients
+  #Each of these will be a matrix of size n_splines or n_covariates times n_transitions
+  out$coefficients <- list(spline = EM_est[["coeff_old"]][1:fix_pars[["n_splines"]], ],
+                           covariate = EM_est[["coeff_old"]][fix_pars[["n_splines"]] + (1:fix_pars[["n_covariates"]]), ])
+  out$trans <- fix_pars[["tmat"]]
+  #Now we add the 'msfit' part (baseline hazard)
+  #For now, we can't calculate the variances yet.
+  #haz is a n_times x n_transitions matrix, containing log hazards at each time for each transition
+  haz <- fix_pars[["Bspline_basis"]] %*% out[["coefficients"]][["spline"]]
+  #Obtain hazard function
+  out$haz <- data.frame(time = rep((1:fix_pars[["max_time"]]) * fix_pars[["bin_length"]], 
+                             fix_pars[["n_transitions"]]),
+                  haz = exp(as.vector(haz)),
+                  trans = rep(1:fix_pars[["n_transitions"]], each = fix_pars[["max_time"]]))
+  #Obtain cumulative hazard function (can be fit using plot.msfit)
+  out$Haz <- data.frame(time = out[["haz"]][["time"]],
+                  Haz = as.vector(apply(exp(haz), 2, cumsum)),
+                  trans = out[["haz"]][["trans"]])
+  
+  #Remove "msfit" later. Make plot.smoothmsfit which allows to just use plot.msfit
+  class(out) <- c("msfit", "smoothmsfit")
+  return(out)
+}
+

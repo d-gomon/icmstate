@@ -24,12 +24,6 @@
 #' 
 
 
-# NEED TO ADD RISK-ADJUSTMENT
-# RIGHT NOW, ALL SUBJECTS ARE EQUAL
-# ADD SUBJECT as parameters in function
-# ADD + \sum_{j=1}^p x_j \beta_{gh,j} for each transition separately.
-# This can be achieved using model_X[subject, ] %*% beta_pars
-
 
 # The Chapman-Kolmogorov functions
 ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
