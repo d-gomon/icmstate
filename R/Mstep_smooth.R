@@ -25,24 +25,29 @@
 
 
 Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
-  
-  #function(Y, R, X, B, Pen, lambda, cbx)
-  
+
   n_splines <- fix_pars[["n_splines"]] #=n_splines
   n_covariates <- fix_pars[["n_covariates"]] #=n_covariates
+  use_RA <- fix_pars[["use_RA"]]
   B <- fix_pars[["Bspline_basis"]]
   X <- fix_pars[["mod_matrix"]]
   lambda <- EM_est[["lambda"]][transno]
   
   # Compute hazard, expected values and residuals
   coeff_splines <- c(EM_est[["coeff_old"]][1:n_splines, transno])
-  coeff_covariates <- c(EM_est[["coeff_old"]][n_splines + (1:n_covariates), transno])
+  if(!use_RA){
+    coeff_covariates <- 0
+  } else{
+    coeff_covariates <- c(EM_est[["coeff_old"]][n_splines + (1:n_covariates), transno])
+  }
+  
+  #browser()
   eta0 <- c(B %*% coeff_splines)  # log baseline hazard
   f <- c(X %*% coeff_covariates)  # covariate contribution to log hazard
-  Eta <- outer(eta0, f, "+")
-  H <- exp(Eta)
-  Mu <- EM_est[["AtRisk"]][ , from, ] * H
-  Res <- EM_est[["NumTrans"]][ , transno, ] - Mu
+  Eta <- outer(eta0, f, "+") #Basically add the two and stash them
+  H <- exp(Eta) #Go to actual hazard from log-hazard
+  Mu <- EM_est[["AtRisk"]][ , from, ] * H #Mu is equal to Y_{iu}*exp(\eta_{iu}), Basically hazard contribution times at risk prob
+  Res <- EM_est[["NumTrans"]][ , transno, ] - Mu #Res is the y variable in article, the "Poisson outcomes"
   
   # Likelihood
   ll <- sum(EM_est[["NumTrans"]][ , transno, ] * Eta - Mu)
@@ -58,17 +63,35 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   Mbx <- t(B) %*% Mu %*% X                    #Replace with diag() if issues arise
   M <- rbind(cbind(Mbb, Mbx), cbind(t(Mbx), Mxx))
   
-  # Solve for new coeffcients and check convergence
-  Mpen <- M + Pen
-  cnew <- solve(Mpen, c(qb, qx) + M %*% EM_est[["coeff_old"]][, transno])
-  G <- solve(Mpen, M)
-  ed <- sum(diag(G)[1:n_splines])
-  EM_est[["coeff_new"]][, transno] <- cnew
+  #Risk-adjustment case:
+  if(use_RA){
+    # Solve for new coefficients and check convergence
+    Mpen <- M + Pen
+    cnew <- solve(Mpen, c(qb, qx) + M %*% EM_est[["coeff_old"]][, transno])
+    G <- solve(Mpen, M)
+    ed <- sum(diag(G)[1:n_splines])
+    EM_est[["coeff_new"]][, transno] <- cnew
+  } else{ #No risk-adjustment, don't optimize the regression coefficient
+    # Solve for new coefficients and check convergence
+    Mpen <- M + Pen
+    Mpen <- Mpen[1:n_splines, 1:n_splines]
+    tempsol <- c(qb, qx) + M %*% EM_est[["coeff_old"]][, transno]
+    tempsol <- tempsol[1:n_splines, , drop = FALSE]
+    cnew <- solve(Mpen, tempsol)
+    G <- solve(Mpen, M[1:n_splines, 1:n_splines])
+    ed <- sum(diag(G)[1:n_splines])
+    EM_est[["coeff_new"]][, transno] <- c(cnew,0)
+  }
+  
+  if(!use_RA){ #If we don't have covariates, set intercept "covariate" to 0
+    EM_est[["coeff_new"]][n_splines + 1, transno] <- 0
+  }
   u <- EM_est[["coeff_new"]][1:n_splines, transno]
   v <- t(u) %*% Pen[1:n_splines, 1:n_splines] %*% u / lambda
   # Because of error that Mpen was computationally singular
   EM_est[["lambda"]][transno] <- max(1e-4, min(1e+06, ed / v)) 
   
+  #old output
   #output <- list(H = H, cbx = cbx, lambda = lambdanew, ed = ed, 
   #               G = G, ll = ll, pen = pen, Mpen = Mpen)
 }

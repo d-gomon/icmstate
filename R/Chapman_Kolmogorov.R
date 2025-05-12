@@ -36,6 +36,7 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
   tmat2 <- fix_pars[["tmat2"]]
+  use_RA <- fix_pars[["use_RA"]]
   #Current estimate of P: ode() will fill this in.
   P <- matrix(state, n_states, n_states)
   # Build dA matrix - containing intensities
@@ -45,7 +46,7 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   for (transno in 1:n_transitions){
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
       exp(JOPS::bbase(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
-    if(n_covariates != 0){
+    if(use_RA){ #If we need to risk-adjust, we scale the hazard. Otherwise, we don't have to!
       dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
         c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
     }
@@ -75,6 +76,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
   tmat2 <- fix_pars[["tmat2"]]
+  use_RA <- fix_pars[["use_RA"]]
   #Current estimate of P: ode() will fill this in.
   P <- matrix(state, n_states, n_states)
   # Build dA matrix
@@ -82,7 +84,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   for (transno in 1:n_transitions){
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
       exp(JOPS::bbase(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
-    if(n_covariates != 0){
+    if(use_RA){
       dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
         c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
     }

@@ -89,7 +89,8 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   assertDataFrame(gd, min.cols = 3, max.cols = 3, add = arg_checks)
   assertNames(names(gd), must.include = c("id", "state", "time"), 
               add = arg_checks)
-  if(!inherits(gd[, "id"], "numeric") && !inherits(gd[, "id"], "character")){
+  if(!inherits(gd[, "id"], "numeric") && !inherits(gd[, "id"], "character") 
+     && !inherits(gd[, "id"], "integer")){
     stop("The 'id' column in 'gd' must be of class numeric or character.")
   }
   assertIntegerish(gd[, "state"], add = arg_checks)
@@ -124,15 +125,16 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Change subject names to integers<<<<<<<<>>>>>>>>>>>>>>
   #Sort w.r.t. id and time
   gd <- gd[order(gd[, "id"], gd[, "time"]), ]
-  data <- data[order(data[, "id"]), ]
   original_subject_names <- unique(gd[, "id"]) #This can be numeric or character
   n_subjects <- length(original_subject_names)
-  if(nrow(data) != n_subjects){
-    stop("Number of subjects in 'gd' and 'data' is not equal.")
-  }
+  
   subject_names <- 1:n_subjects #New names, integer
   #If covariates specified.
   if(!missing(data)){
+    data <- data[order(data[, "id"]), ]
+    if(nrow(data) != n_subjects){
+      stop("Number of subjects in 'gd' and 'data' is not equal.")
+    }
     subject_names_data <- unique(data[, "id"])
     #Check whether all observed subjects also have related covariates
     assertTRUE(all(original_subject_names %in% subject_names_data))
@@ -168,8 +170,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #The bins are taken to be small enough that no two subsequent transitions 
   #of the same individual are present within any bin. 
   #To make it easy, we (for now) take the bin size to be the smallest 
-  #difference between two consecutive observation times
-  bin_length <- min(diff(sort(unique(gd[, "time"])))) #In article, represented by w
+  #difference between two consecutive observation times of single subject.
+  diff_times <- diff(unique(gd[, "time"]))
+  bin_length <- min(diff_times[diff_times > 0]) #In article, represented by w
   
   #Scale data by bin length (so bin endpoints are always at 1,2,...)
   gd[, "time"] <- gd[, "time"]/bin_length
@@ -202,17 +205,22 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     rhs <- as.character(formula)[[3]]
     mod_matrix <- model.matrix(as.formula(paste("~", rhs, "- 1")), data = data)
     n_covariates = ncol(mod_matrix)
-    #TODOTODOTODO
-    #If data supplied: calculate risk-adjustment factors for each transition
-    #for each subject: n_subjects x transitions matrix
-    #Else: data <- NULL and in next functions adjust for this  
-    #Replace with #columns of design matrix.
+    use_RA <- TRUE
   } else{
-    n_covariates = 0
+    #Make an zero-dummy model matrix
+    mod_matrix <- matrix(0, nrow = n_subjects, ncol = 1)
+    colnames(mod_matrix) <- "Dummy"
+    n_covariates = 1
+    use_RA <- FALSE
   }
   
   # Penalty matrix
-  ridge_penalty <- 1e-06 #User could choose this...
+  if(use_RA){
+    ridge_penalty <- 1e-06 #User could choose this...  
+  } else{
+    ridge_penalty <- 0 #No ridge penalty when no risk-adjustment
+  }
+  
   D <- diff(diag(n_splines), diff = ord_penalty)
   Pdiff = Pridge = 0 * diag(n_splines + n_covariates)
   Pdiff[1:n_splines, 1:n_splines] = t(D) %*% D   #I don't understand why, but sure.
@@ -241,10 +249,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    max_time = max_time,
                    tmat = tmat,
                    tmat2 = tmat2,
-                   Bspline_basis = Bspline_basis)
-  if(n_covariates != 0){ #Add model matrix if we have covariates
-    fix_pars <- append(fix_pars, list(mod_matrix = mod_matrix))
-  }
+                   Bspline_basis = Bspline_basis,
+                   use_RA = use_RA,
+                   mod_matrix = mod_matrix)
   #Subjects are now always named 1:n_subjects
   #Original subject names can be recovered from original_subject_names
   
@@ -325,7 +332,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     #Called for side effects: Updates the values in EM_est (hashtable)
     #In particular: "AtRisk" and "NumTrans"
     Estep_smooth(fix_pars = fix_pars, subject_slices = subject_slices,
-                 EM_est = EM_est)
+                 EM_est = EM_est, it_num = it_num)
     
     
     
@@ -334,9 +341,8 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     for(transno in 1:n_transitions){
       ## M Step ------------------------------------------------------------------
       cat("Start Mstep transition", transno, "\n")
-      #For this step, the idea is to use JOPS::psPoisson() to obtain updated estimates
+      #For this step, the idea is to use a variant of JOPS::psPoisson() to obtain updated estimates
       #Remember that d_{gh,i}^u is a realisation of Poisson(Y_{g,i}^u exp(\eta_{gh,i}^u))
-      #Check icpack for implementation of GLM Poisson regression. 
       #This will then yield coefficients of B-splines (for each transition)
       #and due to the manual adjustment of psPoisson() in Mstep_smooth
       #also the regression coefficients
@@ -352,7 +358,6 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
       #rate <- c(exp(eta)) * nt / tmax # exp(eta) standardized to original time unit
       #rates[it, transno] <- mean(rate) # rates should be reasonably constant, so average
       #lambda[transno] <- tmp$lambda # no updating
-      
       
     }
     
