@@ -62,7 +62,7 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   Mxx <- t(X) %*% diag(wx) %*% X         #is diag() for sparse matrices.
   Mbx <- t(B) %*% Mu %*% X                    #Replace with diag() if issues arise
   M <- rbind(cbind(Mbb, Mbx), cbind(t(Mbx), Mxx))
-  
+  #browser()
   #Risk-adjustment case:
   if(use_RA){
     # Solve for new coefficients and check convergence
@@ -83,7 +83,7 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
     EM_est[["coeff_new"]][, transno] <- c(cnew,0)
   }
   
-  if(!use_RA){ #If we don't have covariates, set intercept "covariate" to 0
+  if(!use_RA){ #If we don't have covariates, set "covariate" coefficient to 0
     EM_est[["coeff_new"]][n_splines + 1, transno] <- 0
   }
   u <- EM_est[["coeff_new"]][1:n_splines, transno]

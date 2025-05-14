@@ -104,7 +104,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
           # cat("Forward ODE ...\n")
           #browser()
           fwd <- suppressWarnings(ode(y = ode_init, times = times, func = ChapKolm_fwd_smooth,
-                     parms = EM_est, method = "lsoda", fix_pars = fix_pars, 
+                     parms = EM_est, method = fix_pars[["ode_solver"]], fix_pars = fix_pars, 
                      subject = i))
           fwd[fwd < 0] <- 0
           # fwd_array <- array(fwd[, -1], dim=c(ntimes1, n_states, n_states))
@@ -112,7 +112,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
           # Backward ODE
           # cat("Backward ODE ...\n")
           bwd <- suppressWarnings(ode(y = ode_init, times = times, func = ChapKolm_bwd_smooth,
-                     parms = EM_est, method = "lsoda", fix_pars = fix_pars,
+                     parms = EM_est, method = fix_pars[["ode_solver"]], fix_pars = fix_pars,
                      subject = i))
           bwd[bwd < 0] <- 0
           # bwd_array <- array(bwd[ntimes1:1, -1], dim=c(ntimes1, n_states, n_states)) # backwards in time

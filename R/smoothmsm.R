@@ -46,6 +46,8 @@
 #' it will be set to zero during estimation. Default value is \code{tol/10}.
 #' @param ode_solver The integrator to use for solving the ODE's. See 
 #' \code{\link[deSolve:ode]{ode()}}. By default, the "lsoda" solver will be used.
+#' @param ridge_penalty The ridge penalty to use for estimating risk-adjustment 
+#' coefficients. Default = 1e-06.
 #' 
 #' 
 #' 
@@ -72,7 +74,8 @@
 smoothmsm <- function(gd, tmat, exact, formula, data,
                       deg_splines = 3, n_segments = 20, ord_penalty = 2, 
                       maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
-                      verbose = FALSE, prob_tol = tol/10, ode_solver = "lsoda"){
+                      verbose = FALSE, prob_tol = tol/10, ode_solver = "lsoda",
+                      ridge_penalty = 1e-06){
   
 # Pre-processing ---------------------------------------
 
@@ -200,10 +203,14 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                                nseg = n_segments, bdeg = deg_splines)
   
   ## Risk adjustment ----------------------------------------------------
-  
   if(!missing(data) & !missing(formula)){
-    rhs <- as.character(formula)[[3]]
-    mod_matrix <- model.matrix(as.formula(paste("~", rhs, "- 1")), data = data)
+    rhs <- formula[-2]
+    mod_matrix <- model.matrix(object = rhs, data = data)
+    #Remove intercept column
+    intercept_pos <- match("(Intercept)", colnames(mod_matrix))
+    if(!is.na(intercept_pos)){
+      mod_matrix <- mod_matrix[, -intercept_pos]
+    }
     n_covariates = ncol(mod_matrix)
     use_RA <- TRUE
   } else{
@@ -214,9 +221,10 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     use_RA <- FALSE
   }
   
-  # Penalty matrix
+  
+  # Ridge Regularization
   if(use_RA){
-    ridge_penalty <- 1e-06 #User could choose this...  
+    ridge_penalty <- ridge_penalty #User could choose this...  
   } else{
     ridge_penalty <- 0 #No ridge penalty when no risk-adjustment
   }
@@ -383,8 +391,10 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #First, scale time back by * bin_length
   #Then shift back time by: +min_time_orig
   smoothmsfit <- create_smoothmsfit(fix_pars = fix_pars, EM_est = EM_est)
-  
-  out <- list(coefficients = EM_est[["coeff_old"]],
+  coeff_out <- EM_est[["coeff_old"]]
+  rownames(coeff_out) <- c(paste0("B", 1:n_segments), colnames(fix_pars[["mod_matrix"]]))
+  colnames(coeff_out) <- paste0("trans", 1:n_transitions)
+  out <- list(log_coeff = coeff_out,
               AtRisk = EM_est[["AtRisk"]],
               NumTrans = EM_est[["NumTrans"]],
               loglik = ll_history,
