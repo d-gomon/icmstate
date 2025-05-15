@@ -30,6 +30,71 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
 }
 
 
+#' Compute a B-spline basis for a single time point
+#' 
+#' Similar to bbase_D, but sped up for single time points.
+#'
+#' @export
+#' @param x The value for which the basis is to be evaluated (ONLY SINGLE VALUE ALLOWED)
+#' @param xl The left boundary of the domain
+#' @param xr The right boundary of the domain
+#' @param nseg The number of inter-knot segments on the domain
+#' @param bdeg The degree of the B-splines (2 means quadratic, 3 means cubic, and so on)
+#' @return A matrix containing the basis
+#'
+#'
+#' @keywords internal
+#' @noRd
+#' 
+#' @examples
+#' x = runif(100)
+#' B = bbase_D(x, 0, 1, 20, 3)
+
+
+bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
+  #Only works if x is a single time - not longer for vectors!
+  #Compare compute speed to old implementation
+  #microbenchmark(new = bbase_newtry(0.09, 0, 1, nseg = 20, bdeg = 3),
+  #               old = bbase_D(0.09, 0, 1, nseg = 20, bdeg = 3),
+  #               times = 500)
+  dx <- (xr - xl)/nseg
+  
+  #Knot locations: we only need to calculate B-spline values within the segment we are interested in
+  #For this (see Appendix C.1) we only need the left and right side of segment x is located in
+  #and 3 extra knots to each side to calculate the tpower at the knots
+  #Left side of segment x is located in: xl + floor((x-xl)/dx)
+  #Right side: xl + ceiling((x-xl)/dx)
+  x_segment <- (x-xl)/dx
+  floor_x_segment <- floor(x_segment)
+  ceil_x_segment <- ceiling(x_segment)
+  knots <- seq(xl + (floor_x_segment - bdeg) * dx, xl + (ceil_x_segment + bdeg) * dx, by = dx)
+  #Left and Right side of segment which x is located in + bdeg knots to both sides (for tpower calculations)
+  P <- outer(x, knots, tpower_D, bdeg)
+  
+  #Now we need to scale the contributions
+  n <- length(knots)
+  D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  B <- (-1) ^ (bdeg + 1) * P %*% t(D)
+  
+  #Need to determine number of segments left and right of out output
+  #we are consistent on the right side, so count from there
+  #n_right_fill <- nseg + bdeg - ceiling(x_segment)
+  #n_left_fill <- nseg + bdeg - n_right_fill - n
+  
+  B_out <- matrix(0, ncol = nseg + bdeg) #The output should have a column for every spline.
+  length_fill <- n - bdeg -1 #Number of elements to fill
+  fill_indices <- ceiling(x_segment) + seq_len(length_fill) - 1 #seq_len is faster than 0:length_fill
+  if(floor_x_segment == ceil_x_segment){
+    fill_indices <- fill_indices + 1
+  }
+  B_out[, fill_indices] <- B
+  B_out
+}
+
+
+
+
+
 #' Truncated power function
 #' 
 #' Same as JOPS::tpower(), internally defined for quick reference

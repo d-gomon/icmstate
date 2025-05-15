@@ -209,7 +209,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     #Remove intercept column
     intercept_pos <- match("(Intercept)", colnames(mod_matrix))
     if(!is.na(intercept_pos)){
-      mod_matrix <- mod_matrix[, -intercept_pos]
+      mod_matrix <- mod_matrix[, -intercept_pos, drop = FALSE]
     }
     n_covariates = ncol(mod_matrix)
     use_RA <- TRUE
@@ -392,7 +392,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Then shift back time by: +min_time_orig
   smoothmsfit <- create_smoothmsfit(fix_pars = fix_pars, EM_est = EM_est)
   coeff_out <- EM_est[["coeff_old"]]
-  rownames(coeff_out) <- c(paste0("B", 1:n_segments), colnames(fix_pars[["mod_matrix"]]))
+  rownames(coeff_out) <- c(paste0("B", 1:n_splines), colnames(fix_pars[["mod_matrix"]]))
   colnames(coeff_out) <- paste0("trans", 1:n_transitions)
   out <- list(log_coeff = coeff_out,
               AtRisk = EM_est[["AtRisk"]],
@@ -401,8 +401,8 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
               fix_pars = fix_pars,
               EM_est = EM_est,
               min_time = min_time_orig,
-              smoothmsfit = smoothmsfit) 
-  
+              smoothmsfit = smoothmsfit)
+
   #Assign 'smoothmsm' class so we can use 'smoothmsm' functions on output
   class(out) <- "smoothmsm"
   return(out)

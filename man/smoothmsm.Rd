@@ -19,7 +19,8 @@ smoothmsm(
   conv_crit = c("haz", "prob", "lik"),
   verbose = FALSE,
   prob_tol = tol/10,
-  ode_solver = "lsoda"
+  ode_solver = "lsoda",
+  ridge_penalty = 1e-06
 )
 }
 \arguments{
@@ -75,11 +76,15 @@ it will be set to zero during estimation. Default value is \code{tol/10}.}
 
 \item{ode_solver}{The integrator to use for solving the ODE's. See 
 \code{\link[deSolve:ode]{ode()}}. By default, the "lsoda" solver will be used.}
+
+\item{ridge_penalty}{The ridge penalty to use for estimating risk-adjustment 
+coefficients. Default = 1e-06.}
 }
 \description{
 For a general Markov chain multi-state model with interval censored 
 transitions calculate the NPMLE of the transition intensities. The estimates 
-are returned as an \code{\link[mstate:msfit]{msfit}} object.
+are returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
+in the data will be set to zero.
 }
 \references{
 Eilers, P.H.C. and Marx, B.D., Practical Smoothing: The Joys of P-splines, 
