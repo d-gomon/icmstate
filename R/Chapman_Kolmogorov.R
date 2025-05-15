@@ -45,7 +45,7 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   # And less subsetting the spline_pars
   for (transno in 1:n_transitions){
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
-      exp(bbase_D(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
+      exp(bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
     if(use_RA){ #If we need to risk-adjust, we scale the hazard. Otherwise, we don't have to!
       dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
         c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
@@ -83,7 +83,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   dA <- matrix(0, n_states, n_states)
   for (transno in 1:n_transitions){
     dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
-      exp(bbase_D(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
+      exp(bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
     if(use_RA){
       dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
         c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
