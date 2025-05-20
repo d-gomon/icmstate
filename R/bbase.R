@@ -23,7 +23,7 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
   dx <- (xr - xl) / nseg
   knots <- seq(xl - bdeg * dx, xr + bdeg * dx, by = dx)
   P <- outer(x, knots, tpower_D, bdeg)
-  n <- dim(P)[2]
+  n <- length(knots)
   D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
   B <- (-1) ^ (bdeg + 1) * P %*% t(D)
   B
@@ -40,15 +40,16 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
 #' @param xr The right boundary of the domain
 #' @param nseg The number of inter-knot segments on the domain
 #' @param bdeg The degree of the B-splines (2 means quadratic, 3 means cubic, and so on)
-#' @return A matrix containing the basis
+#' @return A vector containing the basis
 #'
 #'
 #' @keywords internal
 #' @noRd
 #' 
 #' @examples
-#' x = runif(100)
-#' B = bbase_D(x, 0, 1, 20, 3)
+#' x = 0.02
+#' B = bbase_singletime(x, 0, 1, 20, 3)
+
 
 
 
@@ -105,13 +106,13 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   #We start from the right side of the segment
   #We know that only n_knots-bdeg-1 entries are ever non-zero
   
-  B_out <- matrix(0, ncol = nseg + bdeg) #The output should have a column for every spline.
+  B_out <- vector(mode = "numeric", length = nseg + bdeg) #The output should have a column for every spline.
   length_fill <- n - bdeg -1 #Number of elements to fill
   fill_indices <- ceiling(x_segment) + seq_len(length_fill) - 1 #seq_len is faster than 0:length_fill
   if(floor_x_segment == ceil_x_segment){
     fill_indices <- fill_indices + 1
   }
-  B_out[, fill_indices] <- B
+  B_out[fill_indices] <- B
   B_out
 }
 

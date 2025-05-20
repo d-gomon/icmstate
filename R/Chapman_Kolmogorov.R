@@ -55,7 +55,7 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   
   hazard_vec <- exp(hazard_vec)
   dA[tmat2_transids] <- hazard_vec
-  diag(dA) <- -apply(dA, 1, sum)
+  diag(dA) <- diag(dA) - rowSums(dA)
   # rate of change - Chapman-Kolmogorov equation
   dP <- P %*% dA
   # return the rate of change as list (requirement of deSolve:ode)
@@ -100,7 +100,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   hazard_vec <- exp(hazard_vec)
   dA[tmat2_transids] <- hazard_vec
   
-  diag(dA) <- -apply(dA, 1, sum)
+  diag(dA) <- diag(dA) - rowSums(dA)
   # rate of change - Chapman Kolmogorov equations
   dP <- dA %*% P
   # return the rate of change as list (requirement of deSolve:ode)
