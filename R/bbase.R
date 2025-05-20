@@ -54,7 +54,7 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
 bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   #Only works if x is a single time - not longer for vectors!
   #Compare compute speed to old implementation
-  #microbenchmark(new = bbase_newtry(0.09, 0, 1, nseg = 20, bdeg = 3),
+  #microbenchmark(new = bbase_singletime(0.09, 0, 1, nseg = 20, bdeg = 3),
   #               old = bbase_D(0.09, 0, 1, nseg = 20, bdeg = 3),
   #               times = 500)
   dx <- (xr - xl)/nseg
@@ -76,10 +76,9 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
   B <- (-1) ^ (bdeg + 1) * P %*% t(D)
   
-  #Need to determine number of segments left and right of out output
-  #we are consistent on the right side, so count from there
-  #n_right_fill <- nseg + bdeg - ceiling(x_segment)
-  #n_left_fill <- nseg + bdeg - n_right_fill - n
+  #Need to determine the indices which we now have to fill in.
+  #We start from the right side of the segment
+  #We know that only n_knots-bdeg-1 entries are ever non-zero
   
   B_out <- matrix(0, ncol = nseg + bdeg) #The output should have a column for every spline.
   length_fill <- n - bdeg -1 #Number of elements to fill

@@ -325,7 +325,6 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Initiate with infinite convergence criterion
   conv_criterion = Inf
   
-  cat("Progress showing it, loglik, delta(loglik), lambda's, time-averaged rates:\n")
   ll_history <- vector(mode = "numeric", length = maxit)
   it_num <- 1
   while(conv_criterion > tol & it_num < maxit + 1){
@@ -342,38 +341,55 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     Estep_smooth(fix_pars = fix_pars, subject_slices = subject_slices,
                  EM_est = EM_est, it_num = it_num)
     
+    cat("E-ll using estimates from it ", it_num-2, ": ", EM_est[["loglik_old"]], "\n")
+    cat("E-ll using estimates from it ", it_num-1, ": ", EM_est[["loglik_new"]], "\n")
     
     
-    
+    #We don't want to update lambda in every iteration, only when we have converged
+    #lambda_init <- EM_est[["lambda"]]
+    Mstep_conv_criterion = Inf
+    Mstep_ll_old <- -Inf
+    Mtol <- 1e-4
     #We work separately for each transition in the M step
-    for(transno in 1:n_transitions){
-      ## M Step ------------------------------------------------------------------
-      cat("Start Mstep transition", transno, "\n")
-      #For this step, the idea is to use a variant of JOPS::psPoisson() to obtain updated estimates
-      #Remember that d_{gh,i}^u is a realisation of Poisson(Y_{g,i}^u exp(\eta_{gh,i}^u))
-      #This will then yield coefficients of B-splines (for each transition)
-      #and due to the manual adjustment of psPoisson() in Mstep_smooth
-      #also the regression coefficients
+    while(Mstep_conv_criterion > Mtol){ #How many Mstep iterations do we perform?
+      Mstep_ll <- 0
+      #EM_est[["lambda"]] <- lambda_init #If we do another iteration, we should use original lambda value
+      for(transno in 1:n_transitions){
+        #Update coefficients if we want to do another iteration of M-step
+        EM_est[["coeff_old"]] <- EM_est[["coeff_new"]]
+        ## M Step ------------------------------------------------------------------
+        #For this step, the idea is to use a variant of JOPS::psPoisson() to obtain updated estimates
+        #Remember that d_{gh,i}^u is a realisation of Poisson(Y_{g,i}^u exp(\eta_{gh,i}^u))
+        #This will then yield coefficients of B-splines (for each transition)
+        #and due to the manual adjustment of psPoisson() in Mstep_smooth
+        #also the regression coefficients
+        
+        Pen <- EM_est[["lambda"]][transno] * Pdiff + Pridge
+        from <- tmat2[transno, "from"]
+        to <- tmat2[transno, "to"]
+        #Called for side-effects, updates EM_est: "lambda" and "coeff_old" and "coeff_new"
+        Mstep_ll_temp <- Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from, Pen = Pen)
+        #returns log-likelihood contribution for transno, 
+        #BEFORE updating the spline/covariatecoefficients
+        Mstep_ll <- Mstep_ll + Mstep_ll_temp
+        #cat("Start Mstep transition", transno, " completed. Log-likelihood contribution ", Mstep_ll_temp, "\n")
+      }
       
-      Pen <- EM_est[["lambda"]][transno] * Pdiff + Pridge
-      from <- tmat2[transno, "from"]
-      to <- tmat2[transno, "to"]
-      #Called for side-effects, updates EM_est: "lambda" and "coeff_old" and "coeff_new"
-      Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from, Pen = Pen)
-      #Mstep_smooth(EM_est[["NumTrans"]][, transno, ], EM_est[["AtRisk"]][, from, ], X, B, Pen, lambda[transno], c(cbx[[transno]], 0))
       
-      #eta <- icpack::bbase(1:nt, xl = 0, xr = nt, nseg = nseg, deg = bdeg) %*% cbx[[transno]]
-      #rate <- c(exp(eta)) * nt / tmax # exp(eta) standardized to original time unit
-      #rates[it, transno] <- mean(rate) # rates should be reasonably constant, so average
-      #lambda[transno] <- tmp$lambda # no updating
-      
+      Mstep_conv_criterion <- Mstep_ll - Mstep_ll_old
+      Mstep_ll_old <- Mstep_ll
+      if(Mstep_conv_criterion < 0){ #Sometimes M step can go in the negative direction
+        Mstep_conv_criterion = Inf
+      }
+      cat("Mstep likelihood: ", Mstep_ll, "Mstep diff: ", Mstep_conv_criterion, "\n")
     }
+    
     
     ## Check convergence  ------------------
     ll_history[it_num] <- EM_est[["loglik_old"]]
     ll_dif <- EM_est[["loglik_new"]] - EM_est[["loglik_old"]]
     
-    cat(c(it_num, EM_est[["loglik_new"]], ll_dif), "\n")
+    cat("End of Iteration: ",it_num, "E-ll: ", EM_est[["loglik_new"]], "ll_diff: ", ll_dif, "\n")
     
     
     ## Update EM estimates -------------------

@@ -51,6 +51,9 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   
   # Likelihood
   ll <- sum(EM_est[["NumTrans"]][ , transno, ] * Eta - Mu)
+  #Likelihood that is being calculated here uses new EM_est values, 
+  #but old coefficients for splines and covariates. This means 
+  #the calculated likelihood will always be smaller than what we calculate in the E step
   pen <- lambda * t(coeff_splines) %*% Pen[1:n_splines, 1:n_splines] %*% coeff_splines/2
   
   # Construct equation system
@@ -89,9 +92,10 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   u <- EM_est[["coeff_new"]][1:n_splines, transno]
   v <- t(u) %*% Pen[1:n_splines, 1:n_splines] %*% u / lambda
   # Because of error that Mpen was computationally singular
-  EM_est[["lambda"]][transno] <- max(1e-4, min(1e+06, ed / v)) 
+  EM_est[["lambda"]][transno] <- max(1e-4, min(1e+6, ed / v)) 
   
   #old output
   #output <- list(H = H, cbx = cbx, lambda = lambdanew, ed = ed, 
   #               G = G, ll = ll, pen = pen, Mpen = Mpen)
+  return(ll)
 }
