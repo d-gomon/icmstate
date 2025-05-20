@@ -28,29 +28,33 @@
 # The Chapman-Kolmogorov functions
 ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   #Extract some parameters
-  n_transitions <- fix_pars[["n_transitions"]]
   n_states <- fix_pars[["n_states"]]
   n_covariates <- fix_pars[["n_covariates"]]
   n_splines <- fix_pars[["n_splines"]]
   max_time <- fix_pars[["max_time"]]
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
-  tmat2 <- fix_pars[["tmat2"]]
+  tmat2_transids <- fix_pars[["tmat2_transids"]]
   use_RA <- fix_pars[["use_RA"]]
   #Current estimate of P: ode() will fill this in.
   P <- matrix(state, n_states, n_states)
   # Build dA matrix - containing intensities
   dA <- matrix(0, n_states, n_states)
-  # Can probably negate this for loop by using outer() (don't have to re-calculate the bbase matrix every time)
-  # And less subsetting the spline_pars
-  for (transno in 1:n_transitions){
-    dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
-      exp(bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
-    if(use_RA){ #If we need to risk-adjust, we scale the hazard. Otherwise, we don't have to!
-      dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
-        c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
-    }
+  
+  #pre-calculate some quantities
+  coeffs_main <- parms[["coeff_old"]][1:n_splines, ]
+  B <- bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, 
+                        bdeg = deg_splines, fix_pars = fix_pars)
+  
+  hazard_vec <- B %*% coeffs_main
+  
+  if(use_RA){
+    ra_effect <- fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), ]
+    hazard_vec <- hazard_vec + ra_effect
   }
+  
+  hazard_vec <- exp(hazard_vec)
+  dA[tmat2_transids] <- hazard_vec
   diag(dA) <- -apply(dA, 1, sum)
   # rate of change - Chapman-Kolmogorov equation
   dP <- P %*% dA
@@ -68,27 +72,34 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
 
 ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   #Extract some parameters  
-  n_transitions <- fix_pars[["n_transitions"]]
   n_states <- fix_pars[["n_states"]]
   n_covariates <- fix_pars[["n_covariates"]]
   n_splines <- fix_pars[["n_splines"]]
   max_time <- fix_pars[["max_time"]]
   n_segments <- fix_pars[["n_segments"]]
   deg_splines <- fix_pars[["deg_splines"]]
-  tmat2 <- fix_pars[["tmat2"]]
   use_RA <- fix_pars[["use_RA"]]
+  tmat2_transids <- fix_pars[["tmat2_transids"]]
   #Current estimate of P: ode() will fill this in.
   P <- matrix(state, n_states, n_states)
   # Build dA matrix
   dA <- matrix(0, n_states, n_states)
-  for (transno in 1:n_transitions){
-    dA[tmat2[transno, "from"], tmat2[transno, "to"]] <-
-      exp(bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, bdeg = deg_splines) %*% parms[["coeff_old"]][1:n_splines, transno])
-    if(use_RA){
-      dA[tmat2[transno, "from"], tmat2[transno, "to"]] <- 
-        c(dA[tmat2[transno, "from"], tmat2[transno, "to"]] * exp(fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), transno]))
-    }
+  
+  #pre-calculate some quantities
+  coeffs_main <- parms[["coeff_old"]][1:n_splines, ]
+  B <- bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, 
+                        bdeg = deg_splines, fix_pars = fix_pars)
+  
+  hazard_vec <- B %*% coeffs_main
+  
+  if(use_RA){
+    ra_effect <- fix_pars[["mod_matrix"]][subject, ] %*% parms[["coeff_old"]][n_splines + (1:n_covariates), ]
+    hazard_vec <- hazard_vec + ra_effect
   }
+  
+  hazard_vec <- exp(hazard_vec)
+  dA[tmat2_transids] <- hazard_vec
+  
   diag(dA) <- -apply(dA, 1, sum)
   # rate of change - Chapman Kolmogorov equations
   dP <- dA %*% P
