@@ -160,6 +160,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   
   tmat2 <- mstate::to.trans2(tmat)
+  tmat2_transids <- as.matrix(tmat2[, c("from", "to")])
   ## Derive parameters from data ---------------------------------------------
 
   n_states <- nrow(tmat) # no of states
@@ -257,6 +258,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    max_time = max_time,
                    tmat = tmat,
                    tmat2 = tmat2,
+                   tmat2_transids = tmat2_transids,
                    Bspline_basis = Bspline_basis,
                    use_RA = use_RA,
                    mod_matrix = mod_matrix)

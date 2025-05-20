@@ -44,7 +44,7 @@ ChapKolm_fwd_smooth <- function(t, state, parms, fix_pars, subject) {
   #pre-calculate some quantities
   coeffs_main <- parms[["coeff_old"]][1:n_splines, ]
   B <- bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, 
-                        bdeg = deg_splines, fix_pars = fix_pars)
+                        bdeg = deg_splines)
   
   hazard_vec <- B %*% coeffs_main
   
@@ -88,7 +88,7 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   #pre-calculate some quantities
   coeffs_main <- parms[["coeff_old"]][1:n_splines, ]
   B <- bbase_singletime(t, xl = 0, xr = max_time, nseg = n_segments, 
-                        bdeg = deg_splines, fix_pars = fix_pars)
+                        bdeg = deg_splines)
   
   hazard_vec <- B %*% coeffs_main
   

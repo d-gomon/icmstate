@@ -51,12 +51,22 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
 #' B = bbase_D(x, 0, 1, 20, 3)
 
 
+
 bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
+  #Future speed-up ideas:
+  #Pre-calculate knots outside this function. Then index only over the indices of interest
+  #Pre-calculate D = diff_D(diag(n), differences = bdeg + 1). 
+  #Essentially re-calculating the same matrix every time, especially as n is basically the same every time
+  
   #Only works if x is a single time - not longer for vectors!
+  
+  
   #Compare compute speed to old implementation
   #microbenchmark(new = bbase_singletime(0.09, 0, 1, nseg = 20, bdeg = 3),
   #               old = bbase_D(0.09, 0, 1, nseg = 20, bdeg = 3),
   #               times = 500)
+  
+  #Knot distances
   dx <- (xr - xl)/nseg
   
   #Knot locations: we only need to calculate B-spline values within the segment we are interested in
@@ -67,14 +77,29 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   x_segment <- (x-xl)/dx
   floor_x_segment <- floor(x_segment)
   ceil_x_segment <- ceiling(x_segment)
-  knots <- seq(xl + (floor_x_segment - bdeg) * dx, xl + (ceil_x_segment + bdeg) * dx, by = dx)
+  
+  start <- floor_x_segment - bdeg
+  end <- ceil_x_segment + bdeg
+  
+  #Calculate knots
+  #knots <- seq(xl + (floor_x_segment - bdeg) * dx, 
+  #             xl + (ceil_x_segment + bdeg) * dx, 
+  #             by = dx)
+  knots <- xl + dx * seq.int(start, end)
+  #Faster than using seq()
+  
   #Left and Right side of segment which x is located in + bdeg knots to both sides (for tpower calculations)
-  P <- outer(x, knots, tpower_D, bdeg)
+  #P <- outer(x, knots, tpower_D, bdeg)
+  P <- (x - knots)^bdeg * (x >= knots)
+  #Can directly apply tpower_D function as x is single value.
   
   #Now we need to scale the contributions
-  n <- length(knots)
-  D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
-  B <- (-1) ^ (bdeg + 1) * P %*% t(D)
+  #n <- length(knots)
+  n <- end - start + 1L 
+  #No need to re-calculate D every time. This function is run extremely often
+  t_D <- diff_D_t(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  #D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  B <- (-1) ^ (bdeg + 1) * P %*% t_D
   
   #Need to determine the indices which we now have to fill in.
   #We start from the right side of the segment
@@ -92,8 +117,6 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
 
 
 
-
-
 #' Truncated power function
 #' 
 #' Same as JOPS::tpower(), internally defined for quick reference
@@ -108,7 +131,7 @@ tpower_D <- function(x, t, p) {
   (x - t) ^ p * (x >= t)
 }
 
-#' Non-lagged Differences (adjusted)
+#' Non-lagged (transposed) Differences (adjusted)
 #' 
 #' Adjusted version of base diff() function, can only be used with matrices and 
 #' only with lag = 1L
@@ -126,13 +149,20 @@ tpower_D <- function(x, t, p) {
 #' 
 
 
-diff_D <- function(x, differences = 1L, ...){
-  xlen <- dim(x)[1L]
-  if (1L * differences >= xlen)
-    return(x[0L]) # empty, but of proper mode
-  i1 <- -1L
-  for (i in seq_len(differences))
-    x <- x[i1, , drop = FALSE] -
-  x[-nrow(x):-(nrow(x)), , drop = FALSE]
+diff_D <- function(x, differences = 1L) {
+  for (i in seq_len(differences)) {
+    x <- x[-1L, , drop = FALSE] - x[-nrow(x), , drop = FALSE]
+  }
   x
 }
+
+#' @keywords internal
+
+diff_D_t <- function(x, differences = 1L){
+  for(i in seq_len(differences)){
+    x <- x[, -1L, drop = FALSE] - x[, -ncol(x), drop = FALSE]
+  }
+  x
+}
+
+
