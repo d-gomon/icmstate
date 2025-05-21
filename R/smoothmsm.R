@@ -29,8 +29,11 @@
 #' between d-order differences of spline coefficients). See Eilers \& Marx 
 #' Section 2.3. Defaults to 2.
 #' @param maxit Maximum number of iterations. Default = 100.
-#' @param tol Tolerance of the convergence procedure. A change in the value of 
+#' @param tol Tolerance of the convergence procedure in the E-step. A change in the value of 
 #' \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.
+#' @param Mtol Tolerance of the convergence procedure of the M-step. The M-step 
+#' consists of an Iteratively Reweighted Least Squares (IRLS) procedure, where 
+#' the (unobserved) complete-data likelihood is maximized. Default is \code{1e-4}.
 #' @param conv_crit Convergence criterion. Stops procedure when the difference 
 #' in the chosen quantity between two consecutive iterations is smaller 
 #' than the tolerance level \code{tol}. One of the following:
@@ -73,7 +76,8 @@
 
 smoothmsm <- function(gd, tmat, exact, formula, data,
                       deg_splines = 3, n_segments = 20, ord_penalty = 2, 
-                      maxit = 100, tol = 1e-4, conv_crit = c("haz", "prob", "lik"),
+                      maxit = 100, tol = 1e-4, Mtol = 1e-4, 
+                      conv_crit = c("haz", "prob", "lik"),
                       verbose = FALSE, prob_tol = tol/10, ode_solver = "lsoda",
                       ridge_penalty = 1e-06){
   
@@ -374,7 +378,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     #lambda_init <- EM_est[["lambda"]]
     Mstep_conv_criterion = Inf
     Mstep_ll_old <- -Inf
-    Mtol <- 1e-4
+    Mtol <- Mtol
     #We work separately for each transition in the M step
     while(Mstep_conv_criterion > Mtol){ #How many Mstep iterations do we perform?
       Mstep_ll <- 0
@@ -413,6 +417,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     ## Check convergence  ------------------
     ll_history[it_num] <- EM_est[["loglik_old"]]
     ll_dif <- EM_est[["loglik_new"]] - EM_est[["loglik_old"]]
+    conv_criterion <- ll_dif
     
     cat("End of Iteration: ",it_num, "E-ll: ", EM_est[["loglik_new"]], "ll_diff: ", ll_dif, "\n")
     

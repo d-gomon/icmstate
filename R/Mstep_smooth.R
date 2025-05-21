@@ -1,6 +1,5 @@
 #'  Function for fitting proportional hazard model with baseline hazard
 #'
-#' @import spam
 #' @param Y Expected events (matrix)
 #' @param R Expected risk sets (matrix)
 #' @param X Covariates (matrix)

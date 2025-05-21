@@ -16,6 +16,7 @@ smoothmsm(
   ord_penalty = 2,
   maxit = 100,
   tol = 1e-04,
+  Mtol = 1e-04,
   conv_crit = c("haz", "prob", "lik"),
   verbose = FALSE,
   prob_tol = tol/10,
@@ -55,8 +56,12 @@ Section 2.3. Defaults to 2.}
 
 \item{maxit}{Maximum number of iterations. Default = 100.}
 
-\item{tol}{Tolerance of the convergence procedure. A change in the value of 
+\item{tol}{Tolerance of the convergence procedure in the E-step. A change in the value of 
 \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.}
+
+\item{Mtol}{Tolerance of the convergence procedure of the M-step. The M-step 
+consists of an Iteratively Reweighted Least Squares (IRLS) procedure, where 
+the (unobserved) complete-data likelihood is maximized. Default is \code{1e-4}.}
 
 \item{conv_crit}{Convergence criterion. Stops procedure when the difference 
 in the chosen quantity between two consecutive iterations is smaller 
