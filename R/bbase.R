@@ -93,7 +93,6 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   #P <- outer(x, knots, tpower_D, bdeg)
   P <- (x - knots)^bdeg * (x >= knots)
   #Can directly apply tpower_D function as x is single value.
-  
   #Now we need to scale the contributions
   #n <- length(knots)
   n <- end - start + 1L 
@@ -106,6 +105,53 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   #We start from the right side of the segment
   #We know that only n_knots-bdeg-1 entries are ever non-zero
   
+  B_out <- vector(mode = "numeric", length = nseg + bdeg) #The output should have a column for every spline.
+  length_fill <- n - bdeg -1 #Number of elements to fill
+  fill_indices <- ceiling(x_segment) + seq_len(length_fill) - 1 #seq_len is faster than 0:length_fill
+  if(floor_x_segment == ceil_x_segment){
+    fill_indices <- fill_indices + 1
+  }
+  B_out[fill_indices] <- B
+  B_out
+}
+
+
+bbase_singletime_cached <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3, fix_pars){
+  #Same as bbase_singletime, but the following quantities are cached (pre-calculated):
+  #- dx, t_D, 
+  #Note that there are 2 distinct t_D matrices
+  #If floor_x_segment == ceil_x_segment, t_D has one dimension less!
+  #We call this t_D_trunc
+  #This is either calculated using diff_D_t(diag(n)) with n = 2*bdeg + 1 or 2*bdeg + 2
+  
+  #Knot distances
+  dx <- fix_pars[["bbase_dx"]]
+  
+  #knot locations
+  x_segment <- (x-xl)/dx
+  floor_x_segment <- floor(x_segment)
+  ceil_x_segment <- ceiling(x_segment)
+  
+  start <- floor_x_segment - bdeg
+  end <- ceil_x_segment + bdeg
+  
+  knots <- xl + dx * seq.int(start, end)
+  #Faster than using seq()
+  
+  #Apply tpower_D to knots
+  P <- (x - knots)^bdeg * (x >= knots)
+  #n <- length(knots)
+  n <- end - start + 1L 
+  #No need to re-calculate D every time. This function is run extremely often
+  if (floor_x_segment != ceil_x_segment) {
+    t_D <- fix_pars[["bbase_t_D"]]
+  } else {
+    t_D <- fix_pars[["bbase_t_D_trunc"]]
+  }
+  #D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  B <- fix_pars[["bbase_const"]] * P %*% t_D
+  
+  #Fill output vector
   B_out <- vector(mode = "numeric", length = nseg + bdeg) #The output should have a column for every spline.
   length_fill <- n - bdeg -1 #Number of elements to fill
   fill_indices <- ceiling(x_segment) + seq_len(length_fill) - 1 #seq_len is faster than 0:length_fill

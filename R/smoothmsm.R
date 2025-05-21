@@ -235,6 +235,19 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   Pdiff[1:n_splines, 1:n_splines] = t(D) %*% D   #I don't understand why, but sure.
   diag(Pridge)[n_splines + (1:n_covariates)] = ridge_penalty
   
+  ## bbase - caching ---------------------------------------------------------
+  
+  #We can cache some quantities which we need to calculate bases.
+  #Majorly improved computation speed!
+  bbase_dx <- (max_time - 0)/n_segments
+  bbase_n_knots <- 2*deg_splines + 2
+  bbase_t_D <- diff_D_t(diag(bbase_n_knots), diff = deg_splines + 1) / 
+    (gamma(deg_splines + 1) * bbase_dx ^ deg_splines)
+  bbase_t_D_trunc <- diff_D_t(diag(bbase_n_knots - 1), diff = deg_splines + 1) / 
+    (gamma(deg_splines + 1) * bbase_dx ^ deg_splines)
+  bbase_const <- (-1)^(deg_splines + 1)
+  
+  
   ## Fixed parameters - single list -----------------------
   #We could make this into an environment if we run into performance issues
   #Using hashtab, simply perform sethash() multiple times, with character names "n_segments" etc.
@@ -243,7 +256,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    n_segments = n_segments,
                    ord_penalty = ord_penalty,
                    n_bins = n_bins,
-                   maxit = maxit, 
+                   maxit = maxit,
                    tol = tol,
                    prob_tol = prob_tol,
                    n_states = n_states,
@@ -261,7 +274,13 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    tmat2_transids = tmat2_transids,
                    Bspline_basis = Bspline_basis,
                    use_RA = use_RA,
-                   mod_matrix = mod_matrix)
+                   mod_matrix = mod_matrix,
+                   bbase_dx = bbase_dx,
+                   bbase_t_D = bbase_t_D,
+                   bbase_t_D_trunc = bbase_t_D_trunc,
+                   bbase_const = bbase_const)
+  
+  
   #Subjects are now always named 1:n_subjects
   #Original subject names can be recovered from original_subject_names
   
@@ -275,6 +294,10 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     sethash(subject_slices, subj, which(gd[, "id"] == subj))
   }
   #Takes a long time initially, but compensates a lot later.
+  
+  
+  
+
 
   
 # EM Algorithm ------------------------------------------------------------
