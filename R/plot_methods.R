@@ -42,7 +42,7 @@ plot.npmsm <- function(x, ...){
 
 
 plot.smoothmsm <- function(x, ...){
-  plot(x$A, ...)
+  plot(x$smoothmsfit, ...)
 }
 
 

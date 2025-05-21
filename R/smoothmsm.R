@@ -311,7 +311,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #https://bookdown.org/content/d1e53ac9-28ce-472f-bc2c-f499f18264a3/reference.html
   
   
-  ## EM hashtable ----------------------------------------------
+  ## EM estimates list ----------------------------------------------
   #We need to initiate values for \theta = (\alpha, \beta)
   #with \alpha the B-spline coefficients 
   #and \beta the regression coefficients
@@ -320,7 +320,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #(n_splines + n_coefficients) x n_transitions matrix
   #with each column representing the estimates of the coefficients for that transition g->h
   
-  EM_est <- hashtab()
+  #EM_est <- hashtab()
+  #hashtab() is slower than just using list when accessing often :(
+  EM_est <- list()
   
   #>>>>>>>>>>>>>>>>>>>>>Initiate Spline + regression coefficients<<<<<<<<<<<<<<<<<<<<<
   
@@ -344,8 +346,15 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   
   
   #>>>>>>>>>>>>>>>>>>>>>>>Keep track of likelihood<<<<<<<<<<<<<<<<<<<<<<<<<<
+  
+  # Observed log likelihood (calculated in E-step)
   EM_est[["loglik_old"]] <- -Inf
   EM_est[["loglik_new"]] <- -Inf
+  
+  #"Complete" (unobserved) Poisson log likelihood (calculated in M-step)
+  EM_est[["complete_ll_old"]] <- rep(-Inf, n_transitions)
+  EM_est[["complete_ll_new"]] <- rep(-Inf, n_transitions)
+  
   
   #>>>>>>>>>>>>>>>>>>>>>>Penalization coefficient lambda<<<<<<<<<<<<<<<<<<<<
   # Separate penalization coefficient for each transition.
@@ -357,27 +366,27 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   ll_history <- vector(mode = "numeric", length = maxit)
   it_num <- 1
   while(conv_criterion > tol & it_num < maxit + 1){
+    cat(it_num)
     ## E step ------------------------------------------------------------------
     
-    cat("Start Estep iteration", it_num, "\n")
+    #cat("Start Estep iteration", it_num, "\n")
     #E.2
     #Write probtrans_ODE or something, using ODE to:
     #Solve ODEs for all subjects (n), for all bins (U), determining:
     #P_{gh, i}(from, to).
     
-    #Called for side effects: Updates the values in EM_est (hashtable)
+    #Called for "side" effects: Updates the values in EM_est (hashtable)
     #In particular: "AtRisk" and "NumTrans"
-    Estep_smooth(fix_pars = fix_pars, subject_slices = subject_slices,
+    EM_est <- Estep_smooth(fix_pars = fix_pars, subject_slices = subject_slices,
                  EM_est = EM_est, it_num = it_num)
     
-    cat("E-ll using estimates from it ", it_num-2, ": ", EM_est[["loglik_old"]], "\n")
-    cat("E-ll using estimates from it ", it_num-1, ": ", EM_est[["loglik_new"]], "\n")
+    #cat("E-ll using estimates from it ", it_num-2, ": ", EM_est[["loglik_old"]], "\n")
+    #cat("E-ll using estimates from it ", it_num-1, ": ", EM_est[["loglik_new"]], "\n")
     
     
     #We don't want to update lambda in every iteration, only when we have converged
     #lambda_init <- EM_est[["lambda"]]
     Mstep_conv_criterion = Inf
-    Mstep_ll_old <- -Inf
     Mtol <- Mtol
     #We work separately for each transition in the M step
     while(Mstep_conv_criterion > Mtol){ #How many Mstep iterations do we perform?
@@ -397,29 +406,29 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
         from <- tmat2[transno, "from"]
         to <- tmat2[transno, "to"]
         #Called for side-effects, updates EM_est: "lambda" and "coeff_old" and "coeff_new"
-        Mstep_ll_temp <- Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from, Pen = Pen)
-        #returns log-likelihood contribution for transno, 
-        #BEFORE updating the spline/covariatecoefficients
-        Mstep_ll <- Mstep_ll + Mstep_ll_temp
+        EM_est <- Mstep_smooth(fix_pars = fix_pars, EM_est = EM_est, transno = transno, from = from, Pen = Pen)
+        #returns log-likelihood contribution for transno, using old coefficient estimates
+        
+        
         #cat("Start Mstep transition", transno, " completed. Log-likelihood contribution ", Mstep_ll_temp, "\n")
       }
       
-      
-      Mstep_conv_criterion <- Mstep_ll - Mstep_ll_old
-      Mstep_ll_old <- Mstep_ll
+      Mstep_conv_criterion <- sum(EM_est[["complete_ll_new"]]) - sum(EM_est[["complete_ll_old"]])
+      EM_est[["complete_ll_old"]] <- EM_est[["complete_ll_new"]]
       if(Mstep_conv_criterion < 0){ #Sometimes M step can go in the negative direction
         Mstep_conv_criterion = Inf
       }
-      cat("Mstep likelihood: ", Mstep_ll, "Mstep diff: ", Mstep_conv_criterion, "\n")
     }
-    
+    #cat("Mstep likelihood: ", sum(EM_est[["complete_ll_new"]]), "Mstep diff: ", 
+    #    Mstep_conv_criterion, "\n")
     
     ## Check convergence  ------------------
     ll_history[it_num] <- EM_est[["loglik_old"]]
     ll_dif <- EM_est[["loglik_new"]] - EM_est[["loglik_old"]]
     conv_criterion <- ll_dif
     
-    cat("End of Iteration: ",it_num, "E-ll: ", EM_est[["loglik_new"]], "ll_diff: ", ll_dif, "\n")
+    cat("End of Iteration: ",it_num, "E-ll: ", EM_est[["loglik_new"]], 
+        "ll_diff: ", ll_dif, "\n")
     
     
     ## Update EM estimates -------------------

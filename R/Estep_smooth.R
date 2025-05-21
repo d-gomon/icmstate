@@ -184,7 +184,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
   
   EM_est[["NumTrans"]][EM_est[["NumTrans"]]>1] <- 1
   EM_est[["loglik_new"]] <- loglik
-  return()
+  return(EM_est)
 }
 
 

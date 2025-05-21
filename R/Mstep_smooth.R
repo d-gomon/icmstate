@@ -93,8 +93,10 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   # Because of error that Mpen was computationally singular
   EM_est[["lambda"]][transno] <- max(1e-4, min(1e+6, ed / v)) 
   
+  #Update log-likelihood value
+  EM_est[["complete_ll_new"]] <- ll
   #old output
   #output <- list(H = H, cbx = cbx, lambda = lambdanew, ed = ed, 
   #               G = G, ll = ll, pen = pen, Mpen = Mpen)
-  return(ll)
+  return(EM_est)
 }
