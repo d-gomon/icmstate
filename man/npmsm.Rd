@@ -132,7 +132,6 @@ in the related article.}
 }
 \value{
 A list with the following entries:
-\describe{
   \item{\code{A}: }{A list of class \code{\link[mstate:msfit]{msfit}} containing 
   the cumulative intensities for each transition and the transition matrix used;}
   \item{\code{Ainit}: }{Initial intensities, in an object of class \code{\link[mstate:msfit]{msfit}};}
@@ -169,7 +168,6 @@ A list with the following entries:
   \item{\code{checkMLE_tol}: }{The tolerance of the checkMLE procedure;}
   \item{\code{prob_tol}: }{Tolerance for probabilities to be set to zero;}
   \item{\code{remove_redundant}: }{Were redundant observations removed before performing the procedure?;}
-}
 }
 \description{
 For a general Markov chain multi-state model with interval censored 
