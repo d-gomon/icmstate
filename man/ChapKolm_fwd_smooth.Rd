@@ -12,13 +12,15 @@ ChapKolm_fwd_smooth(t, state, parms, fix_pars, subject)
 \item{state}{Values for the state in which the system resides at time t
 (current "estimate" of transition matrix P). 
 Must be a vector of length n_states * n_states containing the stacked 
-columns of P: c(P_11, P_21, ... P_{n_states 1}, P_12, ..., P_{n_states n_states}).}
+columns of P: c(P_11, P_21, ... P_(n_states 1), P_12, ..., P_(n_states n_states)).}
 
-\item{parameters}{Parameters to derive the derivative. For P-splines, this is 
+\item{parms}{Parameters to derive the derivative. For P-splines, this is 
 a list of coefficients, with each list entry (corresponding to a transition number)
 containing a vector of n_splines coefficients.}
 
-\item{n_states}{Number of states in the model.}
+\item{fix_pars}{A list of fixed parameters in the EM procedure}
+
+\item{subject}{A subject identifier for risk-adjustment}
 }
 \value{
 Returns the derivative of the transition probability matrix P(s,t)

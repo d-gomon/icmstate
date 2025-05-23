@@ -59,7 +59,7 @@ function multiple times for parts of \code{newdata} to negate the risk of
 running our of memory.
 Using this function, it is only possible to consider models with transition specific covariates.
 If you would like to have covariates shared over transitions or proportional 
-hazards assumptions between transitions, see \code{\link[probtrans_coxph()]{probtrans_coxph()}}.
+hazards assumptions between transitions, see \code{\link{probtrans_coxph}}.
 }
 \examples{
 #Example from the mstate vignette

@@ -47,11 +47,11 @@ variables which to interpret in \code{formula}.}
 to 3 (cubic B-splines).}
 
 \item{n_segments}{Number of segments to use for the P-splines. The
-segments will space the domain evenly. According to Eilers \& Marx (2021), it 
+segments will space the domain evenly. According to Eilers & Marx (2021), it 
 it OK to choose this number very large. Default = 20.}
 
 \item{ord_penalty}{Order of the P-spline penalty (penalty on the difference 
-between d-order differences of spline coefficients). See Eilers \& Marx 
+between d-order differences of spline coefficients). See Eilers & Marx 
 Section 2.3. Defaults to 2.}
 
 \item{maxit}{Maximum number of iterations. Default = 100.}

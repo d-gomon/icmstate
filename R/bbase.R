@@ -12,7 +12,6 @@
 #'
 #'
 #' @keywords internal
-#' @noRd
 #' 
 #' @examples
 #' x = runif(100)
@@ -24,7 +23,7 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
   knots <- seq(xl - bdeg * dx, xr + bdeg * dx, by = dx)
   P <- outer(x, knots, tpower_D, bdeg)
   n <- length(knots)
-  D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  D <- diff_D(diag(n), differences = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
   B <- (-1) ^ (bdeg + 1) * P %*% t(D)
   B
 }
@@ -44,7 +43,6 @@ bbase_D <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3) {
 #'
 #'
 #' @keywords internal
-#' @noRd
 #' 
 #' @examples
 #' x = 0.02
@@ -97,7 +95,7 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   #n <- length(knots)
   n <- end - start + 1L 
   #No need to re-calculate D every time. This function is run extremely often
-  t_D <- diff_D_t(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
+  t_D <- diff_D_t(diag(n), differences = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
   #D <- diff_D(diag(n), diff = bdeg + 1) / (gamma(bdeg + 1) * dx ^ bdeg)
   B <- (-1) ^ (bdeg + 1) * P %*% t_D
   
@@ -115,6 +113,7 @@ bbase_singletime <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3){
   B_out
 }
 
+#' @keywords internal
 
 bbase_singletime_cached <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg = 3, fix_pars){
   #Same as bbase_singletime, but the following quantities are cached (pre-calculated):

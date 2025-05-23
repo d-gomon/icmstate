@@ -7,19 +7,15 @@
 Mstep_smooth(fix_pars, EM_est, transno, from, Pen = Pen)
 }
 \arguments{
-\item{Pen}{Penalty matrix}
+\item{fix_pars}{A list of fixed parameters during the EM procedure}
 
-\item{Y}{Expected events (matrix)}
+\item{EM_est}{A list of estimated quantities that change during the EM procedure}
 
-\item{R}{Expected risk sets (matrix)}
+\item{transno}{Transition number for the maximization procedure}
 
-\item{X}{Covariates (matrix)}
+\item{from}{The state from which the relevant transition is taking place.}
 
-\item{B}{B-spline basis}
-
-\item{lambda}{Smoothing parameter (number)}
-
-\item{cbx}{Current coefficient estimates}
+\item{Pen}{Penalization matrix for the B-splines and regression coefficients.}
 }
 \value{
 An object with fields:
@@ -35,3 +31,4 @@ An object with fields:
 \description{
 Function for fitting proportional hazard model with baseline hazard
 }
+\keyword{internal}

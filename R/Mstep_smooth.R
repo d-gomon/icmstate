@@ -1,13 +1,18 @@
 #'  Function for fitting proportional hazard model with baseline hazard
 #'
-#' @param Y Expected events (matrix)
-#' @param R Expected risk sets (matrix)
-#' @param X Covariates (matrix)
-#' @param B B-spline basis
-#' @param Pen Penalty matrix
-#' @param lambda Smoothing parameter (number)
-#' @param cbx Current coefficient estimates
 #'
+#'
+#' @param fix_pars A list of fixed parameters during the EM procedure
+#' @param EM_est A list of estimated quantities that change during the EM procedure
+#' @param transno Transition number for the maximization procedure
+#' @param from The state from which the relevant transition is taking place.
+#' @param Pen Penalization matrix for the B-splines and regression coefficients.
+#'
+#'
+#'
+#'
+#' @keywords internal
+#' 
 #' @return An object with fields:
 #' \code{H} = hazards (matrix),
 #' \code{cbx} = coefficient estimates (vector),

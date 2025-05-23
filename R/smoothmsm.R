@@ -23,10 +23,10 @@
 #' @param deg_splines Degree to use for the B-spline basis functions. Defaults 
 #' to 3 (cubic B-splines).
 #' @param n_segments Number of segments to use for the P-splines. The
-#' segments will space the domain evenly. According to Eilers \& Marx (2021), it 
+#' segments will space the domain evenly. According to Eilers & Marx (2021), it 
 #' it OK to choose this number very large. Default = 20. 
 #' @param ord_penalty Order of the P-spline penalty (penalty on the difference 
-#' between d-order differences of spline coefficients). See Eilers \& Marx 
+#' between d-order differences of spline coefficients). See Eilers & Marx 
 #' Section 2.3. Defaults to 2.
 #' @param maxit Maximum number of iterations. Default = 100.
 #' @param tol Tolerance of the convergence procedure in the E-step. A change in the value of 
@@ -63,7 +63,8 @@
 #' 
 #' @importFrom mstate to.trans2 msfit probtrans
 #' @importFrom igraph is_dag graph_from_adjacency_matrix
-#' @importFrom utils hashtab
+#' @importFrom utils hashtab sethash
+#' @importFrom stats model.matrix
 #' @import checkmate
 #' @export
 #' 
@@ -245,9 +246,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Majorly improved computation speed!
   bbase_dx <- (max_time - 0)/n_segments
   bbase_n_knots <- 2*deg_splines + 2
-  bbase_t_D <- diff_D_t(diag(bbase_n_knots), diff = deg_splines + 1) / 
+  bbase_t_D <- diff_D_t(diag(bbase_n_knots), differences = deg_splines + 1) / 
     (gamma(deg_splines + 1) * bbase_dx ^ deg_splines)
-  bbase_t_D_trunc <- diff_D_t(diag(bbase_n_knots - 1), diff = deg_splines + 1) / 
+  bbase_t_D_trunc <- diff_D_t(diag(bbase_n_knots - 1), differences = deg_splines + 1) / 
     (gamma(deg_splines + 1) * bbase_dx ^ deg_splines)
   bbase_const <- (-1)^(deg_splines + 1)
   
@@ -426,6 +427,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
     ll_history[it_num] <- EM_est[["loglik_old"]]
     ll_dif <- EM_est[["loglik_new"]] - EM_est[["loglik_old"]]
     conv_criterion <- ll_dif
+    if(conv_criterion < 0){ #Sometimes we can have a decrease in likelihood...
+      conv_criterion = Inf
+    }
     
     cat("End of Iteration: ",it_num, "E-ll: ", EM_est[["loglik_new"]], 
         "ll_diff: ", ll_dif, "\n")

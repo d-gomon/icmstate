@@ -1,5 +1,17 @@
 
-
+#' E-step of the EM algorithm for smooth estimation of transition intensities
+#' 
+#' 
+#' 
+#' @importFrom JOPS bbase
+#' 
+#' @keywords internal
+#' 
+#' 
+#' 
+#' 
+#' 
+#' 
 
 #We want to calculate the at-risk matrix and the expect trans matrix
 #for each bin for each transition for each subject (row, col, 3rd dim)

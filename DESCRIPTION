@@ -21,7 +21,8 @@ Imports:
     ggplot2,
     deSolve,
     msm,
-    survival
+    survival,
+    JOPS
 LinkingTo: Rcpp
 Suggests: 
     testthat (>= 3.0.0),
