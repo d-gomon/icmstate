@@ -99,7 +99,8 @@ ChapKolm_bwd_smooth <- function(t, state, parms, fix_pars, subject) {
   }
   
   hazard_vec <- exp(hazard_vec)
-  dA[tmat2_transids] <- hazard_vec
+  dA[tmat2_transids] <- - hazard_vec  #BACKWARD EQUATION SO WE HAVE dP(s,t) = -dA(s) P(s,t). 
+  #If we take -hazard_vec here, it's the same as taking -dA(s), and prevents an extra -1 multiplication further on.
   
   diag(dA) <- diag(dA) - rowSums(dA)
   # rate of change - Chapman Kolmogorov equations
