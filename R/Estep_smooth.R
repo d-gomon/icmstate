@@ -99,6 +99,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
         } else {
           # times <- c(0, (sbin+1):(tbin-1) - s, st)
           times <- sbin : tbin
+          revtimes <- tbin : sbin
           ntimes <- tbin - sbin + 1L
           idx <- (sbin+1) : tbin # bins to be filled
           
@@ -123,12 +124,12 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
           fwd_array <- array(fwd[, -1], dim=c(ntimes, n_states, n_states))
           # Backward ODE
           # cat("Backward ODE ...\n")
-          bwd <- suppressWarnings(ode(y = ode_init, times = times, func = ChapKolm_bwd_smooth,
+          bwd <- suppressWarnings(ode(y = ode_init, times = revtimes, func = ChapKolm_bwd_smooth,
                      parms = EM_est, method = fix_pars[["ode_solver"]], fix_pars = fix_pars,
                      subject = i))
           bwd[bwd < 0] <- 0
           # bwd_array <- array(bwd[ntimes1:1, -1], dim=c(ntimes1, n_states, n_states)) # backwards in time
-          bwd_array <- array(bwd[ntimes:1, -1], dim=c(ntimes, n_states, n_states)) # backwards in time
+          bwd_array <- array(bwd[, -1], dim=c(ntimes, n_states, n_states)) # backwards in time
           # Combine
           fwdg <- fwd_array[, g, ]
           #if (h == censor)
