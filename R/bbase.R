@@ -134,7 +134,7 @@ bbase_singletime_cached <- function(x, xl = min(x), xr = max(x), nseg = 10, bdeg
   start <- floor_x_segment - bdeg
   end <- ceil_x_segment + bdeg
   
-  knots <- xl + dx * seq.int(start, end)
+  knots <- xl + dx * (start:end)
   #Faster than using seq()
   
   #Apply tpower_D to knots
