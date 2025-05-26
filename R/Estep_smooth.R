@@ -129,7 +129,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
                      subject = i))
           bwd[bwd < 0] <- 0
           # bwd_array <- array(bwd[ntimes1:1, -1], dim=c(ntimes1, n_states, n_states)) # backwards in time
-          bwd_array <- array(bwd[, -1], dim=c(ntimes, n_states, n_states)) # backwards in time
+          bwd_array <- array(bwd[ntimes:1, -1], dim=c(ntimes, n_states, n_states)) # backwards in time
           # Combine
           fwdg <- fwd_array[, g, ]
           #if (h == censor)
