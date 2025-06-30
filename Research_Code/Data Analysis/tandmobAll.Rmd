@@ -41,17 +41,18 @@ We consider the following multi-state model:
 
 with D meaning deciduous teeth, P meaning permanent teeth, C meaning permanent teeth with caries and 44 and 46 indicating the tooth number. Teeth 44 and 46 are spatially close to each other. BKL Example 4.2 
 
-The following 9 transitions are possible:
+The following 8 transitions are possible:
 
 1->2
 2->3
 2->4
 3->5
 4->5
-4->6
 4->7
 5->6
 7->6
+
+
 
 
 ## Load the necessary software and data
@@ -106,7 +107,7 @@ Set up a transition matrix.
 #tmat <- transMat(list(c(2, 3), c(4, 5), c(5, 6), c(7), c(7, 8, 9), c(9), c(8), c(), c(8)), 
 #                 names = c("D", "P46", "P44", "C46", "P44+P46", "C44", "P44+C46", "C44+C46", "C44+P46"))
 
-tmat <- transMat(list(c(2), c(3, 4), c(5), c(5, 6, 7), c(6), c(), c(6)), 
+tmat <- transMat(list(c(2), c(3, 4), c(5), c(5, 7), c(6), c(), c(6)), 
                  names = c("D", "P46", "C46", "P44+P46", "P44+C46", "C44+C46", "C44+P46"))
 ```
 
@@ -254,10 +255,8 @@ Run EM algorithms
 
 ```{r eval = FALSE}
 #Computations done on ALICE
-#toothMSMmult <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE)
-#toothMSMpois <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE, method = "poisson")
-#Can't get MSM to work. Somehow crudeinits does not assign any mass to 1->2 transition.
-#toothMSM <- msm::msm(state ~ time, subject = id, data = gd2, qmatrix = qmatrix, gen.inits = TRUE)
+toothMSMmult <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE)
+toothMSMpois <- npmsm(gd = gd, tmat = tmat, maxit = 4000, tol = 1e-4, verbose = FALSE, method = "poisson")
 #save(gd, tmat, toothMSMmult, file = "toothMSMMult.Rdata")
 #save(gd, tmat, toothMSMpois, file = "toothMSMPois.Rdata")
 ```
