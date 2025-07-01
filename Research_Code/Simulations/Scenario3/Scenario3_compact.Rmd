@@ -19,6 +19,7 @@ n <- c(100, 300, 500) #Remove one if no files
 n_obs <- c(6) #At most c(3,6)
 N <- 1000
 methods <- c("multinomial", "poisson", "msm")
+desired_order <- c("multinomial", "msm", "poisson")
 
 eval_times <- seq(0, 15, 0.1)
 w_shapes <- c(0.5, 0.5, 2)
@@ -92,27 +93,16 @@ library(ggpubr)
 
 ```{r echo = FALSE}
 interpol_support <- function(msfit, trans){
-  numeric_support <- support_npmsm(msfit)
-  M <- length(numeric_support)
-  if(trans > M){
-    stop("Please provide a transition number which is possible.")
-  }
+  #We want to return the value of Cumulative hazard right at the time smaller or equal to current time
   transno <- trans
   Haz <- rbind(c(0, 0, trans), subset(msfit$Haz, trans == transno))
-  supp <- numeric_support[[trans]]$support[, c(1,2), drop = FALSE]
-  
-  if(nrow(supp) == 0){
-    supp <- rbind(supp, c(min(Haz$time), max(Haz$time)))
+  cumhaz_fct <- function(t){
+    indices <- findInterval(t, Haz$time, left.open = TRUE, rightmost.closed = TRUE)
+    Haz$Haz[indices]
   }
-  
-  #Make interpolation grid
-  x <- matrix(t(supp), nrow = 1, byrow = FALSE)
-  y <-  Haz$Haz[findInterval(x, Haz$time)]
-  x <- c(0, x)
-  y <- c(0, y)
-  
-  return(approxfun(x = x, y = y, rule = 2))
+  return(cumhaz_fct)
 }
+  
 
 interpol_support_msm <- function(msm, trans){
   haz_rates <- exp(msm$estimates)
@@ -361,6 +351,7 @@ for(i in 1:length(n)){
   }
   stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * 9)))
   colnames(stat_multiple)[5] <- "Method"
+  stat_multiple$Method <- factor(stat_multiple$Method, levels = desired_order)
   plot_all_stat <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Cumulative Intensities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names)
   print(plot_all_stat)
   assign(paste0("plot_all_stat", i), plot_all_stat)
@@ -429,6 +420,7 @@ for(i in 1:length(n)){
   }
   stat_multiple <- cbind(stat_multiple, c(rep(methods, each = length(eval_times) * n_states * 3)))
   colnames(stat_multiple)[5] <- "Method"
+  stat_multiple$Method <- factor(stat_multiple$Method, levels = desired_order)
   plot_all_stat_pt <- ggplot(data = stat_multiple, aes(x = time, y = stats, group = interaction(type, as.factor(Method)), col = as.factor(Method), linetype = as.factor(type))) + geom_line(lwd = 1.2) + facet_grid(trans~., scales = "free", labeller = as_labeller(trans_names)) + xlab("Time (Years)") + ylab("Value") + labs(title = "Transition Probabilities", subtitle = paste0("Scenario ", scenario,  ", n = ", n[i]), color = "Method", linetype = "Measure") + scale_color_brewer(palette="Dark2", labels = method_names) 
   print(plot_all_stat_pt)
   assign(paste0("plot_all_stat_pt", i), plot_all_stat_pt)

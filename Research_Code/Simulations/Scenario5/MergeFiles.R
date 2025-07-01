@@ -1,10 +1,10 @@
 
-scenario <- c(5)
+scenario <- c(3)
 n <- 500
 n_obs <- 6
 N <- 500
-methods <- c("poisson") #Change to have any of c("poisson", "multinomial", "msm")
-RNG <- c("", "RNG1")
+methods <- c("binomial", "msm", "poisson") #Change to have any of c("poisson", "multinomial", "msm")
+RNG <- c("", "RNG2")
 
 
 #Create file names to load:
@@ -23,8 +23,15 @@ for(i in 1:nrow(load_names)){
   x <- load_names[i,]
   names_load <- c(names_load, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5], x[6], ".Rdata"))
   var_names <- c(var_names, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", x[4], x[5], x[6]))
-  var_names_new <- c(var_names_new, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", 1000, x[5]))
 }
+
+load_names2 <- load_names
+load_names2[which(load_names[,5] == "binomial"), 5] <- "multinomial"
+for(i in 1:nrow(load_names2)){
+  x <- load_names2[i,]
+  var_names_new <- c(var_names_new, paste0("sc", x[1], "n", x[2], "obs", trimws(x[3]), "N", 1000, x[5]))  
+}
+
 
 
 for(i in 1:(length(names_load)/2)){
