@@ -40,7 +40,7 @@ w_scales <- c(5, 10, 10/gamma(1.5))
 load_names <- expand.grid(scenario, n, n_obs, N, methods)
 #Because we have only ran n <- 500 with N <- 500 we need an extra line:
 which500 <- which(load_names[, 2] == 500)
-load_names[which500, 4] <- 500
+#load_names[which500, 4] <- 500
 load_names[4:6, 4] <- 200
 colnames(load_names) <- c("scenario", "n", "n_obs", "N", "method")
 load_names[, 5] <- as.character(load_names[, 5])
@@ -145,26 +145,14 @@ get_MSE_dat <- function(dat){
 
 ```{r echo = FALSE}
 interpol_support <- function(msfit, trans){
-  numeric_support <- support_npmsm(msfit)
-  M <- length(numeric_support)
-  if(trans > M){
-    stop("Please provide a transition number which is possible.")
-  }
+  #We want to return the value of Cumulative hazard right at the time smaller or equal to current time
   transno <- trans
   Haz <- rbind(c(0, 0, trans), subset(msfit$Haz, trans == transno))
-  supp <- numeric_support[[trans]]$support[, c(1,2), drop = FALSE]
-  
-  if(nrow(supp) == 0){
-    supp <- rbind(supp, c(min(Haz$time), max(Haz$time)))
+  cumhaz_fct <- function(t){
+    indices <- findInterval(t, Haz$time, left.open = TRUE, rightmost.closed = TRUE)
+    Haz$Haz[indices]
   }
-  
-  #Make interpolation grid
-  x <- matrix(t(supp), nrow = 1, byrow = FALSE)
-  y <-  Haz$Haz[findInterval(x, Haz$time)]
-  x <- c(0, x)
-  y <- c(0, y)
-  
-  return(approxfun(x = x, y = y, rule = 2))
+  return(cumhaz_fct)
 }
 
 interpol_support_msm <- function(msm, trans){
