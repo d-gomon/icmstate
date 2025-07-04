@@ -21,8 +21,6 @@ coverage](https://codecov.io/gh/d-gomon/icmstate/graph/badge.svg)](https://app.c
 status](https://www.r-pkg.org/badges/version/icmstate)](https://CRAN.R-project.org/package=icmstate)
 [![CRAN RStudio mirror
 downloads](https://cranlogs.r-pkg.org/badges/icmstate)](https://cran.r-project.org/package=icmstate)
-[![Codecov test
-coverage](https://codecov.io/gh/d-gomon/success/branch/main/graph/badge.svg)](https://codecov.io/gh/d-gomon/success?branch=main)
 <!-- [![Biostatistics](https://img.shields.io/badge/Biostatistics-kxac041-%23003365)](https://doi.org/10.1093/biostatistics/kxac041) -->
 <!-- badges: end -->
 
