@@ -194,6 +194,7 @@ sim_weibmsm <- function(data, tmat, startprobs, exact, shape, scale,
   contains_loops <- FALSE
   adjacency_matrix <- tmat
   adjacency_matrix[!is.na(tmat)] <- 1
+  adjacency_matrix[is.na(tmat)] <- 0
   adjacency_graph <- graph_from_adjacency_matrix(adjacency_matrix)
   if(!is_dag(adjacency_graph)){
     contains_loops <- TRUE

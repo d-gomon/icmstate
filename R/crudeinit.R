@@ -42,6 +42,7 @@ crudeinit.npmsm <- function(gd, taus, tmat){
   #Create graph to check possible transitions
   adjacency_matrix <- tmat
   adjacency_matrix[!is.na(tmat)] <- 1
+  adjacency_matrix[is.na(tmat)] <- 0
   colnames(adjacency_matrix) <- rownames(adjacency_matrix) <- 1:nrow(adjacency_matrix)
   adjacency_graph <- graph_from_adjacency_matrix(adjacency_matrix)
   
