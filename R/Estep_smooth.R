@@ -129,6 +129,7 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
                      subject = i))
           bwd[bwd < 0] <- 0
           # bwd_array <- array(bwd[ntimes1:1, -1], dim=c(ntimes1, n_states, n_states)) # backwards in time
+          
           bwd_array <- array(bwd[ntimes:1, -1], dim=c(ntimes, n_states, n_states)) # backwards in time
           # Combine
           fwdg <- fwd_array[, g, ]
@@ -144,9 +145,9 @@ Estep_smooth <- function(fix_pars, subject_slices, EM_est, it_num){
           denom <- bwd_array[1, g, h]
           #if (is.na(log(denom))) deb(c(i, iobs), method="cat")
           P_cond <- fwd_bwd / denom
-          
           # AtRisk[sbin:tbin, , i] <- P_cond
-          EM_est[["AtRisk"]][idx, , i] <- P_cond[-ntimes, , drop=FALSE]
+          #Used to be P_cond[-ntimes, , drop = FALSE]
+          EM_est[["AtRisk"]][idx, , i] <- P_cond[-1, , drop=FALSE]
           if(denom == 0){ #With our current estimates, observed path is impossible
             EM_est[["AtRisk"]][idx, , i] <- 0 #So subject is not at risk of any of the transitions
             warning(paste0("In E-step of iteration", it_num, "Observed path (", g, "->", h, ") for subject ", i, " between times ", 

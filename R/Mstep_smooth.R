@@ -53,6 +53,9 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   Mu <- EM_est[["AtRisk"]][ , from, ] * H #Mu is equal to Y_{iu}*exp(\eta_{iu}), Basically hazard contribution times at risk prob
   Res <- EM_est[["NumTrans"]][ , transno, ] - Mu #Res is the y variable in article, the "Poisson outcomes"
   
+  #Small offset to prevent computational issues
+  Mu <- Mu + 1e-8
+  
   # Likelihood
   ll <- sum(EM_est[["NumTrans"]][ , transno, ] * Eta - Mu)
   #Likelihood that is being calculated here uses new EM_est values, 
@@ -97,6 +100,8 @@ Mstep_smooth <- function(fix_pars, EM_est, transno, from, Pen = Pen) {
   v <- t(u) %*% Pen[1:n_splines, 1:n_splines] %*% u / lambda
   # Because of error that Mpen was computationally singular
   EM_est[["lambda"]][transno] <- max(1e-4, min(1e+6, ed / v)) 
+  #Check how many people are estimated at risk in each state: apply(EM_est[["AtRisk"]], 2, rowSums )
+  #Check how many people are estimated to have each transition: apply(EM_est[["NumTrans"]], 2, rowSums )
   
   #Update log-likelihood value
   EM_est[["complete_ll_new"]] <- ll
