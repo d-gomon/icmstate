@@ -192,7 +192,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   ## Derived Quantities Check ------------------------------------------------
   
   #Check if all states in gd are also in tmat
-  assertTRUE(all(unique(gd[, "state"]) %in% 1:nrow(tmat2)), add = arg_checks)
+  assertTRUE(all(unique(gd[, "state"]) %in% 1:nrow(tmat)), add = arg_checks)
   
   #Report assertions
   if (!arg_checks$isEmpty()) checkmate::reportAssertions(arg_checks)
