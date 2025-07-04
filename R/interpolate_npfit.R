@@ -67,10 +67,53 @@ interpol_msfit <- function(msfit, times){
 
 
 
+#' Given a \code{msfit} object, extend the times considered in the object
+#'
+#' @description After using this function, use probtrans to get interpolated 
+#' transition probabilities. This function is useful when you want to obtain
+#' transition probabilities at more than just the minimal number of times that
+#' strictly have to be considered. The inserted hazard values are simply 
+#' the hazards at the nearest time that is smaller or equal.
+#'
+#' @param msfit A \code{msfit} object.
+#' @param times Times at which to extend the \code{msfit} object.
+#'
+#'
+#' @return An \code{msfit} object containing the extended hazards
+#' @export
+#' 
+#' 
+#' @examples 
+#' library(mstate)
+#' tmat <- trans.illdeath()
+#' times <- seq(0, 5, 0.1)
+#' ms_fit <- list(Haz = data.frame(time = rep(times, 3),
+#'                                 Haz = c(replicate(3, cumsum(runif(length(times), 0, 0.02)))),
+#'                                 trans = rep(1:3, each = length(times))),
+#'                trans = tmat)
+#' class(ms_fit) <- "msfit"
+#' 
+#' ms_fit_interpolated <- extend_msfit(ms_fit, seq(0, 5, 0.01))
+#'
 
 
-
-
-
-
+extend_msfit <- function(msfit, times){
+  #Number of possible transitions
+  M <- sum(!is.na(msfit$trans))
+  out <- NULL
+  #We extend each transition separately.
+  for (i in 1:M){
+    Haz <- rbind(c(0, 0, i), msfit$Haz[msfit$Haz$trans == i,])
+    indices <- findInterval(times, Haz$time, left.open = FALSE, rightmost.closed = TRUE)
+    out <- suppressWarnings({
+      rbind(out, data.frame(time = times, Haz = Haz$Haz[indices], trans = rep(i, length(times)) ) ) 
+    })
+    
+  }
+  
+  out <- list(Haz = out,
+              trans = msfit$trans)
+  class(out) <- "msfit"
+  return(out)
+}
 
