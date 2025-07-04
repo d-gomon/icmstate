@@ -1,3 +1,8 @@
+# icmstate 0.2.0
+
+* Introduced the smoothmsm() function - still in development
+* Fixes for future igraph compatibility - graph_from_adjacency_matrix no longer accepts NA inputs.
+
 # icmstate 0.1.1
 
 * Fixed a problem with checking integerish values on Mac machines.
