@@ -102,7 +102,7 @@ interpol_support <- function(msfit, trans){
   transno <- trans
   Haz <- rbind(c(0, 0, trans), subset(msfit$Haz, trans == transno))
   cumhaz_fct <- function(t){
-    indices <- findInterval(t, Haz$time, left.open = TRUE, rightmost.closed = TRUE)
+    indices <- findInterval(t, Haz$time, left.open = FALSE, rightmost.closed = TRUE)
     Haz$Haz[indices]
   }
   return(cumhaz_fct)
@@ -223,7 +223,7 @@ create_summary_df_pt <- function(dat, eval_times, from = from){
   for(i in 1:length(dat)){
     if(inherits(dat[[i]]$A, "msfit")){
       df[((i-1)*n_times +1):(i*n_times), 1:(n_states+1)] <- suppressWarnings({
-      as.matrix(probtrans(interpol_msfit(dat[[i]]$A, times = eval_times), predt = min(eval_times), direction = "forward", variance = FALSE)[[from]])
+      as.matrix(probtrans(extend_msfit(dat[[i]]$A, times = eval_times), predt = min(eval_times), direction = "forward", variance = FALSE)[[from]])
       })
     } else{
       df[((i-1)*n_times +1):(i*n_times), 1:(n_states+1)] <- suppressWarnings({

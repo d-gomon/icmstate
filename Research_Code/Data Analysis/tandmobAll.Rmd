@@ -276,16 +276,6 @@ qmatrix <- tmat
 qmatrix[is.na(qmatrix)] <- 0
 ```
 
-Determine where to put the cut-points:
-```{r}
-ptf <- probtrans(toothMSMmult$A, predt = 0, direction = "forward", variance = FALSE)
-#We want to find the first non zero and maximum of P_{D->P46}(0, t) over t, so P_{12}(0, t)
-#[, 3] because first colum is time
-ptfs <- ptf[[1]][, 3]
-max_times <- ptf[[1]][which.max(ptfs), 1]
-first_nonzero <- ptf[[1]][which.max(ptfs != 0), 1]
-```
-
 Run MSM algorithm
 
 ```{r messages = FALSE}
@@ -311,13 +301,11 @@ toothMSMHom2 <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qm
 #library(minqa)
 #toothMSMHom_bobyqa <- msm::msm(state ~ time, data = gd_msm, subject = id, qmatrix = qmat_try, gen.inits = FALSE, pci = c(first_nonzero, max_times), control=list(rhobeg = 100000, rhoend = 5000, maxfun = 1000, iprint = 2), opt.method = "bobyqa")
 
-save(toothMSMHom, file = "toothMSMHom.Rdata")
+
 ```
 
 
-```{r}
-load("toothMSMHom.Rdata")
-```
+
 
 
 Some issues with fitting this model, let's try something simpler.
@@ -339,13 +327,16 @@ qmat_try_simple[2, 3] <- 0.0001
 
 #toothMSMHom_simple <- msm::msm(state ~ time, data = gd_msm_simple, subject = id, qmatrix = qmat_try_simple, gen.inits = FALSE, pci = c(6, 8, 10),  control=list(fnscale=12000, maxit = 1000))
 
-toothMSMHom_simple_fixed <- msm::msm(state ~ time, data = gd_msm_simple, subject = id, qmatrix = qmat_try_simple, gen.inits = FALSE, pci = c(6, 8, 10),  control=list(fnscale=12000, maxit = 1000), fixedpars = c(3, 4, 5))
+
+toothMSMHom <- msm::msm(state ~ time, data = gd_msm_simple, subject = id, qmatrix = qmat_try_simple, gen.inits = FALSE, pci = c(6, 8, 10),  control=list(fnscale=12000, maxit = 1000), fixedpars = c(2, 4, 5))
+
+toothMSMHom <- toothMSMHom_simple_fixed
+
+save(toothMSMHom, file = "toothMSMHom.Rdata")
 ```
 
-
 ```{r}
-#For future code:
-toothMSMHom <- toothMSMHom_simple_fixed
+load("toothMSMHom.Rdata")
 ```
 
 
