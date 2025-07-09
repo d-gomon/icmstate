@@ -2,9 +2,14 @@
 #' transitions 
 #' 
 #' @description For a general Markov chain multi-state model with interval censored 
-#' transitions calculate the NPMLE of the transition intensities. The estimates 
-#' are returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
+#' transitions smoothly estimate the (log-)hazard (see Details). The estimates 
+#' are also returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
 #' in the data will be set to zero.
+#' Note that the hazard is modelled on LOG-scale!! This means that the B-splines 
+#' will represent the log-hazard. For underlying weibull hazard, this means that
+#' the hazard will always be a first degree polynomial in log(time). Keep this in 
+#' mind when choosing the degree of the B-splines.
+#' 
 #' 
 #' 
 #' @param gd A \code{data.frame} with the following named columns
@@ -14,8 +19,6 @@
 #'   \item{\code{time}:}{Time at which the subject is observed;}
 #' } The true transition time between states is then interval censored between the times.
 #' @param tmat A transition matrix as created by \code{\link[mstate:transMat]{transMat}}
-#' @param exact Numeric vector indicating to which states transitions are observed at exact times.
-#' Must coincide with the column number in \code{tmat}.
 #' @param formula Formula to interpret in data for covariates.
 #' @param data A \code{data.frame} containing a column called \code{'id'} 
 #' (identifying the subjects in \code{gd}) and 
@@ -28,31 +31,38 @@
 #' @param ord_penalty Order of the P-spline penalty (penalty on the difference 
 #' between d-order differences of spline coefficients). See Eilers & Marx 
 #' Section 2.3. Defaults to 2.
+#' @param n_bins Number of bins to use for estimation. The higher this number, the 
+#' higher the 'resolution' of the estimates (see Details). Guideline is to have the bin size 
+#' smaller than the smallest 2 consecutive observation times for any subject.
+#' Large values increase computational load. Default = 100.
 #' @param maxit Maximum number of iterations. Default = 100.
 #' @param tol Tolerance of the convergence procedure in the E-step. A change in the value of 
-#' \code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.
+#' the observed-data likelihood in an iteration of less than \code{tol} will make the procedure stop.
 #' @param Mtol Tolerance of the convergence procedure of the M-step. The M-step 
 #' consists of an Iteratively Reweighted Least Squares (IRLS) procedure, where 
 #' the (unobserved) complete-data likelihood is maximized. Default is \code{1e-4}.
-#' @param conv_crit Convergence criterion. Stops procedure when the difference 
-#' in the chosen quantity between two consecutive iterations is smaller 
-#' than the tolerance level \code{tol}. One of the following:
-#' \describe{
-#' \item{"haz"}{Stop when change in maximum estimated intensities (hazards) \code{ < tol}.}
-#' \item{"prob"}{Stop when change in estimated probabilities \code{ < tol}.}
-#' \item{"lik"}{Stop when change in observed-data likelihood \code{ < tol}.}
-#' } Default is "haz". The options "haz" and "lik" can be compared across different
-#' \code{method}s, but "prob" is dependent on the chosen \code{method}. Most 
-#' conservative (requiring most iterations) is "prob", followed by "haz" and finally "lik".
 #' @param verbose Should iteration messages be printed? Default is FALSE
-#' @param prob_tol If an estimated probability is smaller than \code{prob_tol}, 
-#' it will be set to zero during estimation. Default value is \code{tol/10}.
 #' @param ode_solver The integrator to use for solving the ODE's. See 
 #' \code{\link[deSolve:ode]{ode()}}. By default, the "lsoda" solver will be used.
 #' @param ridge_penalty The ridge penalty to use for estimating risk-adjustment 
 #' coefficients. Default = 1e-06.
 #' 
 #' 
+#' 
+#' @details
+#' This function estimates (for each transition in the MSM) the log hazard
+#' at the midpoint of bins \eqn{\eta_{iu}}{eta[iu]} given by:
+#' \deqn{\log(h_{iu}) = \eta_{iu} = \sum_{m=1}^{M} b_{um} \alpha_{m} + \sum_{j=1}^{p} x_{ij} \beta_{j}}{eta[iu] = sum(b[um] * alpha[m], m=1..M) + sum(x[ij] * beta[j], j=1..p)}
+#' with \eqn{M} the number of splines (given by \code{n_segments + deg_splines}). u 
+#' represents a single bin \eqn{(\tau_{u-1}, \tau_u]} (total number specified by \code{n_bins}) such that 
+#' \eqn{b_{um} = B_m(\overline{\tau}_u)} with \eqn{\overline{\tau}_u} the midpoint 
+#' of bin u. Each spline gets assigned a single parameter \eqn{\alpha_m}, which 
+#' can heuristically be thought of as the approximate value of the spline. 
+#' All bins have the same length and cover the total observed 
+#' time-period evenly. The second part of the equation corresponds to the 
+#' subject specific covariates and coefficients respectively. The function returns 
+#' values for \eqn{\theta = (\alpha, \beta)}, thereby allowing users to reconstruct 
+#' the (log-)hazard.
 #' 
 #' 
 #' @references 
@@ -69,17 +79,38 @@
 #' @export
 #' 
 #' 
+#' @examples
+#' #Generate data from illness-death model with Weibull hazards.
+#' wshapes <- c(0.5,0.5,2)
+#' wscales <- c(5, 10, 10/gamma(1.5))
+#' ID_Weib <- sim_weibmsm(tmat = trans.illdeath(), shape = wshapes,
+#'                        scale = wscales, n_subj = 80, obs_pars = c(2, 0.5, 20), 
+#'                        startprobs = c(0.9, 0.1, 0))
+#' 
+#' smoothID_Weib <- smoothmsm(gd = ID_Weib, tmat = trans.illdeath(), ord_penalty = 1,
+#' deg_splines = 1, tol = 1e-5, maxit = 20)
+#' 
+#' #Let's plot the estimates against the truth
+#' x <- seq(0, max(ID_Weib$time), 0.01)
+#' #True hazard (see pweibull details)
+#' haz1 <- -pweibull(x, wshapes[1], wscales[1], lower = FALSE, log = TRUE)
+#' haz2 <- -pweibull(x, wshapes[2], wscales[2], lower = FALSE, log = TRUE)
+#' haz3 <- -pweibull(x, wshapes[3], wscales[3], lower = FALSE, log = TRUE)
+#' 
+#' plot(smoothID_Weib$smoothmsfit, main = "SMOOTH (dashed = true)")
+#' lines(x, haz1, col = "black", lwd = 2, lty = 2)
+#' lines(x, haz2, col = "red", lwd = 2, lty = 2)
+#' lines(x, haz3, col = "green", lwd = 2, lty = 2)
 #' 
 #' 
 #' 
 
 
 
-smoothmsm <- function(gd, tmat, exact, formula, data,
-                      deg_splines = 3, n_segments = 20, ord_penalty = 2, 
+smoothmsm <- function(gd, tmat, formula, data,
+                      deg_splines = 3, n_segments = 20, ord_penalty = 2, n_bins = 100,
                       maxit = 100, tol = 1e-4, Mtol = 1e-4, 
-                      conv_crit = c("haz", "prob", "lik"),
-                      verbose = FALSE, prob_tol = tol/10, ode_solver = "lsoda",
+                      verbose = FALSE, ode_solver = "lsoda",
                       ridge_penalty = 1e-06){
   
 # Pre-processing ---------------------------------------
@@ -90,7 +121,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
 
   ## Argument checks ---------------------------------------------------------
   call <- match.call()
-  conv_crit <- match.arg(conv_crit, choices = c("haz", "prob", "lik"))
+  #conv_crit <- match.arg(conv_crit, choices = c("haz", "prob", "lik"))
   
   arg_checks <- makeAssertCollection()
   assertMatrix(tmat, add = arg_checks)
@@ -103,9 +134,9 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   }
   assertIntegerish(gd[, "state"], add = arg_checks)
   assertNumeric(gd[, "time"], lower = 0, add = arg_checks)
-  if(!missing(exact)){
-    assertIntegerish(exact, lower = 1, upper = nrow(tmat), add = arg_checks)
-  }
+  #if(!missing(exact)){
+  #  assertIntegerish(exact, lower = 1, upper = nrow(tmat), add = arg_checks)
+  #}
   assertIntegerish(maxit, lower = 0, add = arg_checks)
   assertNumeric(tol, add = arg_checks)
   assertLogical(verbose, add = arg_checks)
@@ -175,20 +206,34 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   n_splines <- deg_splines + n_segments
   
   #>>>>>>>>>>>>>>>>>>>>BIN LENGTH<<<<<<<<<<<<<<<<<<<<<
+  
+  #Switched to specifying n_bins in advance, requiring the calculation of bin_length
+  #from the OriGinal time frame. We extend the time-frame a little to compensate.
+  max_time_og <- max(gd[, "time"]) * 1.05
+  bin_length <- max_time_og/n_bins
+  #Rescale time to integers on bin scale (so (0, 1] is bin 1, (1, 2] is bin 2 etc...)
+  gd[, "time"] <- gd[, "time"]/bin_length
+  max_time <- n_bins
+  bin_right <- 1:max_time
+  bin_middle <- (1:n_bins) - 0.5
+  
+  
+  #Old method to determine bin length and n_bins
   #Determine length of bins and initialize them (using their mid and right-endpoints)
   #The bins are taken to be small enough that no two subsequent transitions 
   #of the same individual are present within any bin. 
   #To make it easy, we (for now) take the bin size to be the smallest 
   #difference between two consecutive observation times of single subject.
-  diff_times <- diff(unique(gd[, "time"]))
-  bin_length <- min(diff_times[diff_times > 0]) #In article, represented by w
+  #diff_times <- diff(unique(gd[, "time"]))
+  #bin_length <- min(diff_times[diff_times > 0]) #In article, represented by w
   
   #Scale data by bin length (so bin endpoints are always at 1,2,...)
-  gd[, "time"] <- gd[, "time"]/bin_length
-  max_time <- ceiling(max(gd[, "time"])) + 1L
-  bin_right <- 1:max_time
-  n_bins <- max_time #Represented in article by U
-  bin_middle <- (1:n_bins) - 0.5 #Represented by \overline{\tau_u}
+  #gd[, "time"] <- gd[, "time"]/bin_length
+  #max_time <- ceiling(max(gd[, "time"])) + 1L
+  #bin_right <- 1:max_time
+  #n_bins <- max_time #Represented in article by U
+  #bin_middle <- (1:n_bins) - 0.5 #Represented by \overline{\tau_u}
+  
   ## Derived Quantities Check ------------------------------------------------
   
   #Check if all states in gd are also in tmat
@@ -263,7 +308,7 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
                    n_bins = n_bins,
                    maxit = maxit,
                    tol = tol,
-                   prob_tol = prob_tol,
+                   #prob_tol = prob_tol,
                    n_states = n_states,
                    n_transitions = n_transitions,
                    n_splines = n_splines,
@@ -301,8 +346,20 @@ smoothmsm <- function(gd, tmat, exact, formula, data,
   #Takes a long time initially, but compensates a lot later.
   
   
+  ## Check if n_bins chosen appropriately -----------------------
+  min_diff_time_subj <- Inf
+  for(subj in subject_names){
+    #Smallest time difference between 3 consecutive observations
+    temp_min_diff <- min(diff(qwe, lag = 2))
+    if(temp_min_diff < min_diff_time_subj){
+      min_diff_time_subj <- temp_min_diff
+    }
+  }
   
-
+  if(bin_length > min_diff_time_subj){
+    n_bins_suggested <- max_time_og/min_diff_time_subj
+    warning(paste0("Chosen 'n_bins' does not appropriately cover the data. We suggest at least ", max(ceiling(n_bins_suggested), n_splines), " n_bins."))
+  }
 
   
 # EM Algorithm ------------------------------------------------------------

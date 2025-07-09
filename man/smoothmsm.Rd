@@ -8,18 +8,16 @@ transitions}
 smoothmsm(
   gd,
   tmat,
-  exact,
   formula,
   data,
   deg_splines = 3,
   n_segments = 20,
   ord_penalty = 2,
+  n_bins = 100,
   maxit = 100,
   tol = 1e-04,
   Mtol = 1e-04,
-  conv_crit = c("haz", "prob", "lik"),
   verbose = FALSE,
-  prob_tol = tol/10,
   ode_solver = "lsoda",
   ridge_penalty = 1e-06
 )
@@ -33,9 +31,6 @@ smoothmsm(
 } The true transition time between states is then interval censored between the times.}
 
 \item{tmat}{A transition matrix as created by \code{\link[mstate:transMat]{transMat}}}
-
-\item{exact}{Numeric vector indicating to which states transitions are observed at exact times.
-Must coincide with the column number in \code{tmat}.}
 
 \item{formula}{Formula to interpret in data for covariates.}
 
@@ -54,30 +49,21 @@ it OK to choose this number very large. Default = 20.}
 between d-order differences of spline coefficients). See Eilers & Marx 
 Section 2.3. Defaults to 2.}
 
+\item{n_bins}{Number of bins to use for estimation. The higher this number, the 
+higher the 'resolution' of the estimates (see Details). Guideline is to have the bin size 
+smaller than the smallest 2 consecutive observation times for any subject.
+Large values increase computational load. Default = 100.}
+
 \item{maxit}{Maximum number of iterations. Default = 100.}
 
 \item{tol}{Tolerance of the convergence procedure in the E-step. A change in the value of 
-\code{conv_crit} in an iteration of less than \code{tol} will make the procedure stop.}
+the observed-data likelihood in an iteration of less than \code{tol} will make the procedure stop.}
 
 \item{Mtol}{Tolerance of the convergence procedure of the M-step. The M-step 
 consists of an Iteratively Reweighted Least Squares (IRLS) procedure, where 
 the (unobserved) complete-data likelihood is maximized. Default is \code{1e-4}.}
 
-\item{conv_crit}{Convergence criterion. Stops procedure when the difference 
-in the chosen quantity between two consecutive iterations is smaller 
-than the tolerance level \code{tol}. One of the following:
-\describe{
-\item{"haz"}{Stop when change in maximum estimated intensities (hazards) \code{ < tol}.}
-\item{"prob"}{Stop when change in estimated probabilities \code{ < tol}.}
-\item{"lik"}{Stop when change in observed-data likelihood \code{ < tol}.}
-} Default is "haz". The options "haz" and "lik" can be compared across different
-\code{method}s, but "prob" is dependent on the chosen \code{method}. Most 
-conservative (requiring most iterations) is "prob", followed by "haz" and finally "lik".}
-
 \item{verbose}{Should iteration messages be printed? Default is FALSE}
-
-\item{prob_tol}{If an estimated probability is smaller than \code{prob_tol}, 
-it will be set to zero during estimation. Default value is \code{tol/10}.}
 
 \item{ode_solver}{The integrator to use for solving the ODE's. See 
 \code{\link[deSolve:ode]{ode()}}. By default, the "lsoda" solver will be used.}
@@ -87,9 +73,54 @@ coefficients. Default = 1e-06.}
 }
 \description{
 For a general Markov chain multi-state model with interval censored 
-transitions calculate the NPMLE of the transition intensities. The estimates 
-are returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
+transitions smoothly estimate the (log-)hazard (see Details). The estimates 
+are also returned as an \code{\link[mstate:msfit]{msfit}} object. The smallest time 
 in the data will be set to zero.
+Note that the hazard is modelled on LOG-scale!! This means that the B-splines 
+will represent the log-hazard. For underlying weibull hazard, this means that
+the hazard will always be a first degree polynomial in log(time). Keep this in 
+mind when choosing the degree of the B-splines.
+}
+\details{
+This function estimates (for each transition in the MSM) the log hazard
+at the midpoint of bins \eqn{\eta_{iu}}{eta[iu]} given by:
+\deqn{\log(h_{iu}) = \eta_{iu} = \sum_{m=1}^{M} b_{um} \alpha_{m} + \sum_{j=1}^{p} x_{ij} \beta_{j}}{eta[iu] = sum(b[um] * alpha[m], m=1..M) + sum(x[ij] * beta[j], j=1..p)}
+with \eqn{M} the number of splines (given by \code{n_segments + deg_splines}). u 
+represents a single bin \eqn{(\tau_{u-1}, \tau_u]} (total number specified by \code{n_bins}) such that 
+\eqn{b_{um} = B_m(\overline{\tau}_u)} with \eqn{\overline{\tau}_u} the midpoint 
+of bin u. Each spline gets assigned a single parameter \eqn{\alpha_m}, which 
+can heuristically be thought of as the approximate value of the spline. 
+All bins have the same length and cover the total observed 
+time-period evenly. The second part of the equation corresponds to the 
+subject specific covariates and coefficients respectively. The function returns 
+values for \eqn{\theta = (\alpha, \beta)}, thereby allowing users to reconstruct 
+the (log-)hazard.
+}
+\examples{
+#Generate data from illness-death model with Weibull hazards.
+wshapes <- c(0.5,0.5,2)
+wscales <- c(5, 10, 10/gamma(1.5))
+ID_Weib <- sim_weibmsm(tmat = trans.illdeath(), shape = wshapes,
+                       scale = wscales, n_subj = 80, obs_pars = c(2, 0.5, 20), 
+                       startprobs = c(0.9, 0.1, 0))
+
+smoothID_Weib <- smoothmsm(gd = ID_Weib, tmat = trans.illdeath(), ord_penalty = 1,
+deg_splines = 1, tol = 1e-5, maxit = 20)
+
+x <- seq(0, max(ID_Weib$time), 0.01)
+
+haz1 <- -pweibull(x, wshapes[1], wscales[1], lower = FALSE, log = TRUE)
+haz2 <- -pweibull(x, wshapes[2], wscales[2], lower = FALSE, log = TRUE)
+haz3 <- -pweibull(x, wshapes[3], wscales[3], lower = FALSE, log = TRUE)
+
+ 
+plot(smoothID_Weib$smoothmsfit, main = "SMOOTH (dashed = true)")
+lines(x, haz1, col = "black", lwd = 2, lty = 2)
+lines(x, haz2, col = "red", lwd = 2, lty = 2)
+lines(x, haz3, col = "green", lwd = 2, lty = 2)
+
+
+
 }
 \references{
 Eilers, P.H.C. and Marx, B.D., Practical Smoothing: The Joys of P-splines, 
