@@ -80,6 +80,7 @@
 #' 
 #' 
 #' @examples
+#' require(mstate)
 #' #Generate data from illness-death model with Weibull hazards.
 #' wshapes <- c(0.5,0.5,2)
 #' wscales <- c(5, 10, 10/gamma(1.5))
@@ -93,16 +94,13 @@
 #' #Let's plot the estimates against the truth
 #' x <- seq(0, max(ID_Weib$time), 0.01)
 #' #True hazard (see pweibull details)
-#' haz1 <- -pweibull(x, wshapes[1], wscales[1], lower = FALSE, log = TRUE)
-#' haz2 <- -pweibull(x, wshapes[2], wscales[2], lower = FALSE, log = TRUE)
-#' haz3 <- -pweibull(x, wshapes[3], wscales[3], lower = FALSE, log = TRUE)
+#' whaz <- mapply(function(shape, scale) -pweibull(x, shape, scale, lower = FALSE,
+#'  log = TRUE), shape = wshapes, scale = wscales)
 #' 
 #' plot(smoothID_Weib$smoothmsfit, main = "SMOOTH (dashed = true)")
-#' lines(x, haz1, col = "black", lwd = 2, lty = 2)
-#' lines(x, haz2, col = "red", lwd = 2, lty = 2)
-#' lines(x, haz3, col = "green", lwd = 2, lty = 2)
-#' 
-#' 
+#' lines(x, whaz[,1], col = "black", lwd = 2, lty = 2)
+#' lines(x, whaz[, 2], col = "red", lwd = 2, lty = 2)
+#' lines(x, whaz[, 3], col = "green", lwd = 2, lty = 2)
 #' 
 
 
@@ -350,7 +348,7 @@ smoothmsm <- function(gd, tmat, formula, data,
   min_diff_time_subj <- Inf
   for(subj in subject_names){
     #Smallest time difference between 3 consecutive observations
-    temp_min_diff <- min(diff(qwe, lag = 2))
+    temp_min_diff <- min(diff(gd[subject_slices[[subj]], "time"], lag = 2))
     if(temp_min_diff < min_diff_time_subj){
       min_diff_time_subj <- temp_min_diff
     }

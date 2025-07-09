@@ -40,6 +40,7 @@ get_intensity_matrices_cpp <- function(object) {
 #' @param direction String: "forward" or "fixedhorizon"
 #' @param as_df Boolean: return as dataframe format
 #' @return Array or List of transition probabilities
+#' @import RcppEigen
 probtrans_D_cpp <- function(int_mat, predt, direction = "forward", as_df = FALSE) {
     .Call(`_icmstate_probtrans_D_cpp`, int_mat, predt, direction, as_df)
 }

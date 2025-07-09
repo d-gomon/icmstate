@@ -97,6 +97,7 @@ values for \eqn{\theta = (\alpha, \beta)}, thereby allowing users to reconstruct
 the (log-)hazard.
 }
 \examples{
+require(mstate)
 #Generate data from illness-death model with Weibull hazards.
 wshapes <- c(0.5,0.5,2)
 wscales <- c(5, 10, 10/gamma(1.5))
@@ -107,19 +108,16 @@ ID_Weib <- sim_weibmsm(tmat = trans.illdeath(), shape = wshapes,
 smoothID_Weib <- smoothmsm(gd = ID_Weib, tmat = trans.illdeath(), ord_penalty = 1,
 deg_splines = 1, tol = 1e-5, maxit = 20)
 
+#Let's plot the estimates against the truth
 x <- seq(0, max(ID_Weib$time), 0.01)
+#True hazard (see pweibull details)
+whaz <- mapply(function(shape, scale) -pweibull(x, shape, scale, lower = FALSE,
+ log = TRUE), shape = wshapes, scale = wscales)
 
-haz1 <- -pweibull(x, wshapes[1], wscales[1], lower = FALSE, log = TRUE)
-haz2 <- -pweibull(x, wshapes[2], wscales[2], lower = FALSE, log = TRUE)
-haz3 <- -pweibull(x, wshapes[3], wscales[3], lower = FALSE, log = TRUE)
-
- 
 plot(smoothID_Weib$smoothmsfit, main = "SMOOTH (dashed = true)")
-lines(x, haz1, col = "black", lwd = 2, lty = 2)
-lines(x, haz2, col = "red", lwd = 2, lty = 2)
-lines(x, haz3, col = "green", lwd = 2, lty = 2)
-
-
+lines(x, whaz[,1], col = "black", lwd = 2, lty = 2)
+lines(x, whaz[, 2], col = "red", lwd = 2, lty = 2)
+lines(x, whaz[, 3], col = "green", lwd = 2, lty = 2)
 
 }
 \references{

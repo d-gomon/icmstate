@@ -113,6 +113,7 @@ List get_intensity_matrices_cpp(const List& object) {
 //' @param direction String: "forward" or "fixedhorizon"
 //' @param as_df Boolean: return as dataframe format
 //' @return Array or List of transition probabilities
+//' @import RcppEigen
 // [[Rcpp::export]]
 SEXP probtrans_D_cpp(List int_mat, double predt, std::string direction = "forward", bool as_df = false) {
  
