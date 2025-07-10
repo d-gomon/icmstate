@@ -348,7 +348,8 @@ smoothmsm <- function(gd, tmat, formula, data,
   min_diff_time_subj <- Inf
   for(subj in subject_names){
     #Smallest time difference between 3 consecutive observations
-    temp_min_diff <- min(diff(gd[subject_slices[[subj]], "time"], lag = 2))
+    temp_min_diff <- diff(gd[subject_slices[[subj]], "time"], lag = 2)
+    temp_min_diff <- ifelse(length(temp_min_diff) > 0, min(temp_min_diff), Inf)
     if(temp_min_diff < min_diff_time_subj){
       min_diff_time_subj <- temp_min_diff
     }
@@ -566,6 +567,11 @@ create_smoothmsfit <- function(fix_pars, EM_est){
   out$Haz <- data.frame(time = out[["haz"]][["time"]],
                   Haz = as.vector(apply(exp(haz), 2, cumsum)),
                   trans = out[["haz"]][["trans"]])
+  #Obtain log-hazard function
+  out$loghaz <- data.frame(time = rep((1:fix_pars[["max_time"]]) * fix_pars[["bin_length"]], 
+                                      fix_pars[["n_transitions"]]),
+                           haz = as.vector(haz),
+                           trans = rep(1:fix_pars[["n_transitions"]], each = fix_pars[["max_time"]]))
   
   #Remove "msfit" later. Make plot.smoothmsfit which allows to just use plot.msfit
   class(out) <- c("msfit", "smoothmsfit")

@@ -4,18 +4,21 @@
 \alias{plot.smoothmsm}
 \title{Plot a "smoothmsm" object}
 \usage{
-\method{plot}{smoothmsm}(x, ...)
+\method{plot}{smoothmsm}(x, haz = c("haz", "cumhaz", "loghaz"), ...)
 }
 \arguments{
 \item{x}{An object of class \code{"smoothmsm"}}
 
-\item{...}{Additional arguments to \code{\link[base:plot]{plot}}}
+\item{haz}{Type of hazard to plot. Choices are \code{"haz"} (default: hazard),
+\code{"cumhaz"} (cumulative hazard), \code{"loghaz"} (log-hazard).}
+
+\item{...}{Additional arguments to \code{\link[mstate:plot.msfit]{plot.msfit}}}
 }
 \value{
 A plot will be produced in the plotting window
 }
 \description{
-Plot the cumulative intensities of a \code{'npmsm'} objects.
-A wrapper for \code{\link[mstate:plot.msfit]{plot.msfit}} from the
+Plot the cumulative intensities of a \code{'smoothmsm'} objects.
+For the cumulative hazard, a wrapper for \code{\link[mstate:plot.msfit]{plot.msfit}} from the
 \code{\link[mstate:mstate]{mstate}} package.
 }
