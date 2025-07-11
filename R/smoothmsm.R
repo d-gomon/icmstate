@@ -89,7 +89,7 @@
 #'                        startprobs = c(0.9, 0.1, 0))
 #' 
 #' smoothID_Weib <- smoothmsm(gd = ID_Weib, tmat = trans.illdeath(), ord_penalty = 1,
-#' deg_splines = 1, tol = 1e-5, maxit = 20)
+#' deg_splines = 1, tol = 1e-5, maxit = 3)
 #' 
 #' #Let's plot the estimates against the truth
 #' x <- seq(0, max(ID_Weib$time), 0.01)
