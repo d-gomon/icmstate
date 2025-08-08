@@ -71,6 +71,25 @@ the (unobserved) complete-data likelihood is maximized. Default is \code{1e-4}.}
 \item{ridge_penalty}{The ridge penalty to use for estimating risk-adjustment 
 coefficients. Default = 1e-06.}
 }
+\value{
+A list of class \code{'smoothmsm'} with the following entries:
+  \item{\code{log_coeff}: }{A matrix containing the log-coefficients for
+  the splines and covariates (rows) for each transition (columns). The 
+  rows are named, with Bx indicating the spline coefficients for spline x;}
+  \item{\code{AtRisk}: }{The final estimated at-risk probability 
+  in bin (row) in state (column) for subject (3-rd dimension);}
+  \item{\code{NumTrans}: }{The final estimated transition probability 
+  in bin (row) for transition (column) for subject (3-rd dimension);}
+  \item{\code{loglik}: }{Vector of observed log-likelihood values through
+  the algorithm iterations;}
+  \item{\code{fix_pars}: }{A list of fixed parameters used throughout the 
+  estimation procedure;}
+  \item{\code{EM_est}: }{Current and previous estimates of the EM algorithm;}
+  \item{\code{min_time}: }{Minimum observation time of all subjects in the
+  original data;}
+  \item{\code{smoothmsfit}: }{An object of class \code{'msfit'} (and \code{'smoothmsfit'}),
+  allowing for interactions as in \code{\link[mstate:msfit]{msfit}};}
+}
 \description{
 For a general Markov chain multi-state model with interval censored 
 transitions smoothly estimate the (log-)hazard (see Details). The estimates 
@@ -106,7 +125,7 @@ ID_Weib <- sim_weibmsm(tmat = trans.illdeath(), shape = wshapes,
                        startprobs = c(0.9, 0.1, 0))
 
 smoothID_Weib <- smoothmsm(gd = ID_Weib, tmat = trans.illdeath(), ord_penalty = 1,
-deg_splines = 1, tol = 1e-5, maxit = 20)
+deg_splines = 1, tol = 1e-5, maxit = 3)
 
 #Let's plot the estimates against the truth
 x <- seq(0, max(ID_Weib$time), 0.01)
@@ -123,4 +142,10 @@ lines(x, whaz[, 3], col = "green", lwd = 2, lty = 2)
 \references{
 Eilers, P.H.C. and Marx, B.D., Practical Smoothing: The Joys of P-splines, 
 Cambridge University Press (2021)
+}
+\seealso{
+\code{\link{transprob}} for calculating transition probabilities,
+ \code{\link{plot.smoothmsm}} for plotting the cumulative intensities, 
+ \code{\link{visualise_msm}} for visualising data,
+ \code{\link[mstate:msfit]{msfit}} for details on part of the output object.
 }

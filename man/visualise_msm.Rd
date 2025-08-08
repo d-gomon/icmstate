@@ -4,7 +4,7 @@
 \alias{visualise_msm}
 \title{Visualise multi-state data}
 \usage{
-visualise_msm(gd, npmsm, tmat, neat = TRUE, cutoff)
+visualise_msm(gd, tmat, neat = TRUE, npmsm, cutoff)
 }
 \arguments{
 \item{gd}{A \code{data.frame} containing the following named columns:
@@ -14,15 +14,17 @@ visualise_msm(gd, npmsm, tmat, neat = TRUE, cutoff)
   \item{\code{time}:}{time at which subject is observed;}
 }}
 
-\item{npmsm}{Output from \code{\link{npmsm}} function}
-
-\item{tmat}{A transition matrix as created by \code{transMat}}
+\item{tmat}{(Optional) A transition matrix as created by \code{transMat}. 
+Used to remove redundant observations from plot if \code{neat == TRUE}.}
 
 \item{neat}{Boolean indicating whether redundant observations should be 
 removed in the plot. Default is TRUE}
 
-\item{cutoff}{cutoff value for numerically determining the support using
-\code{\link{support_npmsm}}}
+\item{npmsm}{(Optional) Output from \code{\link{npmsm}} function, to display 
+intervals where non-zero transition intensities are estimated.}
+
+\item{cutoff}{(Optional) Cutoff value for numerically determining the support using
+\code{\link{support_npmsm}} when \code{npmsm} is specified.}
 }
 \value{
 A plot will be produced in the plotting window.

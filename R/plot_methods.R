@@ -61,7 +61,7 @@ plot.smoothmsm <- function(x, haz = c("haz", "cumhaz", "loghaz"), ...){
       ylab <- "Cumulative hazard"
       args <- c(args, ylab = ylab)
     }
-  } else{
+  } else if (haz == "loghaz"){
     #Plot log-haz
     msfit_obj$Haz <- msfit_obj$loghaz
     if(!"ylim" %in% names(args)){

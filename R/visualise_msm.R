@@ -10,12 +10,14 @@
 #'   \item{\code{state}:}{state of subject at \code{time};}
 #'   \item{\code{time}:}{time at which subject is observed;}
 #' }
-#' @param npmsm Output from \code{\link{npmsm}} function
-#' @param tmat A transition matrix as created by \code{transMat}
 #' @param neat Boolean indicating whether redundant observations should be 
 #' removed in the plot. Default is TRUE
-#' @param cutoff cutoff value for numerically determining the support using
-#' \code{\link{support_npmsm}}
+#' @param tmat (Optional) A transition matrix as created by \code{transMat}. 
+#' Used to remove redundant observations from plot if \code{neat == TRUE}.
+#' @param npmsm (Optional) Output from \code{\link{npmsm}} function, to display 
+#' intervals where non-zero transition intensities are estimated. 
+#' @param cutoff (Optional) Cutoff value for numerically determining the support using
+#' \code{\link{support_npmsm}} when \code{npmsm} is specified.
 #' 
 #' @return A plot will be produced in the plotting window.
 #' 
@@ -41,7 +43,7 @@
 #' visualise_msm(sim_dat)                       
 #' 
 
-visualise_msm <- function(gd, npmsm, tmat, neat = TRUE, cutoff){
+visualise_msm <- function(gd, tmat, neat = TRUE, npmsm, cutoff){
   
   # Remove CRAN notes
   id <- ID <- t1 <- t2 <- color <- state1 <- state2 <- NULL

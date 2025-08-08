@@ -65,6 +65,30 @@
 #' the (log-)hazard.
 #' 
 #' 
+#' @return A list of class \code{'smoothmsm'} with the following entries:
+#'   \item{\code{log_coeff}: }{A matrix containing the log-coefficients for
+#'   the splines and covariates (rows) for each transition (columns). The 
+#'   rows are named, with Bx indicating the spline coefficients for spline x;}
+#'   \item{\code{AtRisk}: }{The final estimated at-risk probability 
+#'   in bin (row) in state (column) for subject (3-rd dimension);}
+#'   \item{\code{NumTrans}: }{The final estimated transition probability 
+#'   in bin (row) for transition (column) for subject (3-rd dimension);}
+#'   \item{\code{loglik}: }{Vector of observed log-likelihood values through
+#'   the algorithm iterations;}
+#'   \item{\code{fix_pars}: }{A list of fixed parameters used throughout the 
+#'   estimation procedure;}
+#'   \item{\code{EM_est}: }{Current and previous estimates of the EM algorithm;}
+#'   \item{\code{min_time}: }{Minimum observation time of all subjects in the
+#'   original data;}
+#'   \item{\code{smoothmsfit}: }{An object of class \code{'msfit'} (and \code{'smoothmsfit'}),
+#'   allowing for interactions as in \code{\link[mstate:msfit]{msfit}};}
+#'   
+#'   
+#' @seealso \code{\link{transprob}} for calculating transition probabilities,
+#'  \code{\link{plot.smoothmsm}} for plotting the cumulative intensities, 
+#'  \code{\link{visualise_msm}} for visualising data,
+#'  \code{\link[mstate:msfit]{msfit}} for details on part of the output object.
+#' 
 #' @references 
 #' Eilers, P.H.C. and Marx, B.D., Practical Smoothing: The Joys of P-splines, 
 #' Cambridge University Press (2021)
